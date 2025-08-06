@@ -80,26 +80,14 @@ public:
     /// Установить состояние пикселя
     /// @returns false on fail
     bool setPixel(Position::Value x, Position::Value y, bool on) {
-        if (x < 0 or y < 0 or x >= size.x or y >= size.y) {
+        if (isOutOfBounds(x, y)) {
             return false;
         }
 
-        // Абсолютные координаты в буфере
-        const auto abs_x = offset.x + x;
-        const auto abs_y = offset.y + y;
-
-        // Расчет позиции в буфере (OLED организация)
-        const auto page = abs_y >> 3;              // Страница (группа из 8 строк)
-        const auto page_offset = abs_y & 0b0111;   // Смещение внутри страницы
-        const auto bit_mask = 1 << page_offset;    // Маска бита
-
-        // Индекс байта в буфере
-        const auto byte_index = page * stride + abs_x;
-
         if (on) {
-            buffer[byte_index] |= bit_mask;
+            buffer[getByteIndex(x, y)] |= getByteBitMask(y);
         } else {
-            buffer[byte_index] &= ~bit_mask;
+            buffer[getByteIndex(x, y)] &= ~getByteBitMask(y);
         }
 
         return true;
@@ -109,7 +97,46 @@ public:
         return setPixel(pos.x, pos.y, on);
     }
 
+    bool getPixel(Position::Value x, Position::Value y) const {
+        if (isOutOfBounds(x, y)) {
+            return false;
+        }
+
+        return buffer[getByteIndex(x, y)] & getByteBitMask(y);
+    }
+
+
 private:
+
+    /// Абсолютная позиция по X
+    inline Position::Value absoluteX(Position::Value x) const {
+        return static_cast<Position::Value>(offset.x + x);
+    }
+
+    /// Абсолютная позиция по Y
+    inline Position::Value absoluteY(Position::Value y) const {
+        return static_cast<Position::Value>(offset.y + y);
+    }
+
+    /// Маска бита
+    rs::u8 getByteBitMask(Position::Value y) const {
+        return 1 << (absoluteY(y) & 0b0111);
+    }
+
+    /// Номер страницы
+    int getPage(Position::Value y) const {
+        return absoluteY(y) >> 3;
+    }
+
+    /// Индекс байта в буфере
+    rs::size getByteIndex(Position::Value x, Position::Value y) const {
+        return getPage(y) * stride + absoluteX(x);
+    }
+
+    /// Пиксель за границей
+    bool isOutOfBounds(Position::Value x, Position::Value y) const {
+        return x < 0 or y < 0 or x >= size.x or y >= size.y;
+    }
 
     explicit FrameView(
         rs::u8 *buffer,
