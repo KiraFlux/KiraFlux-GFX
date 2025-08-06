@@ -3,6 +3,7 @@
 #include "Position.hpp"
 
 #include <cstring>
+#include <algorithm>
 
 #include "rs/Result.hpp"
 #include "rs/primitives.hpp"
@@ -45,7 +46,7 @@ public:
 
     /// Создать представление кадра
     static rs::Result<FrameView, Error> create(rs::u8 *buffer, Position::Value stride, Position size, Position offset) {
-        if (size.x < 1 || size.y < 1) {
+        if (size.x < 1 or size.y < 1) {
             return {Error::SizeTooSmall};
         }
 
@@ -54,14 +55,14 @@ public:
 
     /// Создать дочерние представление кадра
     rs::Result<FrameView, Error> sub(Position sub_size, Position sub_offset) const {
-        if (sub_size.x > size.x || sub_size.y > size.y) {
-            return {Error::SizeTooLarge};
+        // Проверяем что смещение не выходит за границы
+        if (sub_offset.x >= size.x || sub_offset.y >= size.y) {
+            return {Error::OffsetOutOfBounds};
         }
 
-        if (sub_offset.x > size.x || sub_offset.y > size.y ||
-            sub_offset.x + sub_size.x > size.x ||
-            sub_offset.y + sub_size.y > size.y) {
-            return {Error::OffsetOutOfBounds};
+        // Проверяем что под-область помещается в родительскую
+        if (sub_size.x > size.x - sub_offset.x || sub_size.y > size.y - sub_offset.y) {
+            return {Error::SizeTooLarge};
         }
 
         return FrameView::create(
@@ -91,10 +92,6 @@ public:
         return true;
     }
 
-    bool setPixel(Position &&pos, bool on) {
-        return setPixel(pos.x, pos.y, on);
-    }
-
     bool getPixel(Position::Value x, Position::Value y) const {
         if (isOutOfBounds(x, y)) {
             return false;
@@ -103,15 +100,43 @@ public:
         return buffer[getByteIndex(x, y)] & getByteBitMask(y);
     }
 
+    /// Эффективно заполнить область представления указанным значением
     void fill(bool value) {
-        for (short x = 0; x < size.x; x++) {
-            for (short y = 0; y < size.y; y++) {
-                setPixel(x, y, value);
+        const int top = offset.y;
+        const auto bottom = offset.y + size.y - 1;
+
+        const auto start_page = top >> 3;
+        const auto end_page = bottom >> 3;
+
+        for (auto page = start_page; page <= end_page; page++) {
+            const auto page_top = page << 3;
+            const auto page_bottom = page_top + 7;
+
+            const auto y_start = std::max(top, page_top);
+            const auto y_end = std::min(bottom, page_bottom);
+
+            if (y_start > y_end) { continue; }
+
+            const rs::u8 mask = createPageMask(y_start - page_top, y_end - page_top);
+
+            rs::u8 *page_buffer = buffer + page * stride + offset.x;
+
+            for (auto i = 0; i < size.x; i++) {
+                if (value) {
+                    page_buffer[i] |= mask;
+                } else {
+                    page_buffer[i] &= ~mask;
+                }
             }
         }
     }
 
 private:
+
+    /// Создать битовую маску для диапазона [start_bit, end_bit]
+    static rs::u8 createPageMask(rs::u8 start_bit, rs::u8 end_bit) {
+        return ((1 << (end_bit + 1)) - 1) ^ ((1 << start_bit) - 1);
+    }
 
     /// Абсолютная позиция по X
     inline Position::Value absoluteX(Position::Value x) const {
