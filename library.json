@@ -1,0 +1,27 @@
+{
+  "name": "KiraFlux-GFX",
+  "version": "0.1.0",
+  "description": "Yet another GFX Lib",
+  "keywords": [
+    "gfx"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JamahaW/KiraFlux-GFX.git"
+  },
+  "authors": [
+    {
+      "name": "JamahaW",
+      "email": "kiraflux@duck.com"
+    }
+  ],
+  "license": "MIT",
+  "frameworks": "arduino",
+  "platforms": "espressif32",
+  "dependencies": {
+    "Rustify": "https://github.com/JamahaW/Rustify.git"
+  },
+  "export": {
+    "include": "src/kfgfx"
+  }
+}
