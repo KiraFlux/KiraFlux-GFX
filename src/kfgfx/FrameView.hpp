@@ -34,50 +34,59 @@ private:
     /// Буфер дисплея (организован по страницам)
     rs::u8 *buffer;
     /// Шаг строки в байтах (ширина всего дисплея)
-    const Position::Value stride;
+    const Position stride;
 
 public:
 
     /// Размер окна
-    const Position size;
+    const Position width, height;
     /// Смещение системы координат
-    const Position offset;
+    const Position offset_x, offset_y;
 
     /// Создать представление кадра
-    static rs::Result<FrameView, Error> create(rs::u8 *buffer, Position::Value stride, Position size, Position offset) {
-        if (size.x < 1 or size.y < 1) {
+    static rs::Result<FrameView, Error> create(
+        rs::u8 *buffer,
+        Position stride,
+        Position width,
+        Position height,
+        Position offset_x,
+        Position offset_y
+    ) {
+        if (width < 1 or height < 1) {
             return {Error::SizeTooSmall};
         }
 
-        return {FrameView(buffer, stride, size, offset)};
+        return {FrameView(buffer, stride, width, height, offset_x, offset_y)};
     }
 
     /// Создать дочерние представление кадра
-    rs::Result<FrameView, Error> sub(Position sub_size, Position sub_offset) const {
-        // Проверяем что смещение не выходит за границы
-        if (sub_offset.x >= size.x || sub_offset.y >= size.y) {
+    rs::Result<FrameView, Error> sub(
+        Position sub_width,
+        Position sub_height,
+        Position sub_offset_x,
+        Position sub_offset_y
+    ) const {
+        if (sub_offset_x >= width or sub_offset_y >= height) {
             return {Error::OffsetOutOfBounds};
         }
 
-        // Проверяем что под-область помещается в родительскую
-        if (sub_size.x > size.x - sub_offset.x || sub_size.y > size.y - sub_offset.y) {
+        if (sub_width > width - sub_offset_x or sub_height > height - sub_offset_y) {
             return {Error::SizeTooLarge};
         }
 
         return FrameView::create(
             buffer,
             stride,
-            sub_size,
-            {
-                static_cast<Position::Value>(offset.x + sub_offset.x),
-                static_cast<Position::Value>(offset.y + sub_offset.y)
-            }
+            sub_width,
+            sub_height,
+            static_cast<Position>(offset_x + sub_offset_x),
+            static_cast<Position>(offset_y + sub_offset_y)
         );
     }
 
     /// Установить состояние пикселя
     /// @returns false on fail
-    bool setPixel(Position::Value x, Position::Value y, bool on) {
+    bool setPixel(Position x, Position y, bool on) {
         if (isOutOfBounds(x, y)) {
             return false;
         }
@@ -91,7 +100,7 @@ public:
         return true;
     }
 
-    bool getPixel(Position::Value x, Position::Value y) const {
+    bool getPixel(Position x, Position y) const {
         if (isOutOfBounds(x, y)) {
             return false;
         }
@@ -101,8 +110,8 @@ public:
 
     /// Эффективно заполнить область представления указанным значением
     void fill(bool value) {
-        const int top = offset.y;
-        const auto bottom = offset.y + size.y - 1;
+        const int top = offset_y;
+        const auto bottom = offset_y + height - 1;
 
         const auto start_page = top >> 3;
         const auto end_page = bottom >> 3;
@@ -118,9 +127,9 @@ public:
 
             const rs::u8 mask = createPageMask(y_start - page_top, y_end - page_top);
 
-            rs::u8 *page_buffer = buffer + page * stride + offset.x;
+            rs::u8 *page_buffer = buffer + page * stride + offset_x;
 
-            for (auto i = 0; i < size.x; i++) {
+            for (auto i = 0; i < width; i++) {
                 if (value) {
                     page_buffer[i] |= mask;
                 } else {
@@ -138,45 +147,49 @@ private:
     }
 
     /// Абсолютная позиция по X
-    inline Position::Value absoluteX(Position::Value x) const {
-        return static_cast<Position::Value>(offset.x + x);
+    inline Position absoluteX(Position x) const {
+        return static_cast<Position>(offset_x + x);
     }
 
     /// Абсолютная позиция по Y
-    inline Position::Value absoluteY(Position::Value y) const {
-        return static_cast<Position::Value>(offset.y + y);
+    inline Position absoluteY(Position y) const {
+        return static_cast<Position>(offset_y + y);
     }
 
     /// Маска бита
-    rs::u8 getByteBitMask(Position::Value y) const {
+    rs::u8 getByteBitMask(Position y) const {
         return 1 << (absoluteY(y) & 0b0111);
     }
 
     /// Номер страницы
-    int getPage(Position::Value y) const {
+    int getPage(Position y) const {
         return absoluteY(y) >> 3;
     }
 
     /// Индекс байта в буфере
-    rs::size getByteIndex(Position::Value x, Position::Value y) const {
+    rs::size getByteIndex(Position x, Position y) const {
         return getPage(y) * stride + absoluteX(x);
     }
 
     /// Пиксель за границей
-    bool isOutOfBounds(Position::Value x, Position::Value y) const {
-        return x < 0 or y < 0 or x >= size.x or y >= size.y;
+    bool isOutOfBounds(Position x, Position y) const {
+        return x < 0 or y < 0 or x >= width or y >= height;
     }
 
     explicit FrameView(
         rs::u8 *buffer,
-        Position::Value stride,
-        Position size,
-        Position offset
+        Position stride,
+        Position width,
+        Position height,
+        Position offset_x,
+        Position offset_y
     ) :
         buffer{buffer},
         stride{stride},
-        size{size},
-        offset{offset} {}
+        width{width},
+        height{height},
+        offset_x{offset_x},
+        offset_y{offset_y} {}
 };
 
 } // namespace kfgfx

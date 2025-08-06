@@ -19,8 +19,7 @@
   "frameworks": "*",
   "platforms": "*",
   "dependencies": {
-    "Rustify": "https://github.com/JamahaW/Rustify.git",
-    "ELA": "https://github.com/JamahaW/ELA.git"
+    "Rustify": "https://github.com/JamahaW/Rustify.git"
   },
   "export": {
     "include": "src/kfgfx"
