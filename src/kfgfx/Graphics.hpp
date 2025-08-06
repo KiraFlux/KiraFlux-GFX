@@ -118,6 +118,60 @@ public:
 
         }
     }
+
+    /// Нарисовать окружность
+    void circle(
+        Position center_x, Position center_y,
+        Position radius,
+        Mode mode
+    ) {
+        const bool fill = (mode == Mode::Fill || mode == Mode::Clear);
+        const bool value = (mode == Mode::Fill || mode == Mode::FillContour);
+
+        // Алгоритм средней точки для окружности
+        Position x = radius;
+        Position y = 0;
+        Position err = 0;
+
+        const auto draw_points = [&](Position px, Position py) {
+            dot(center_x + px, center_y + py, value);
+            dot(center_x + py, center_y + px, value);
+            dot(center_x - py, center_y + px, value);
+            dot(center_x - px, center_y + py, value);
+            dot(center_x - px, center_y - py, value);
+            dot(center_x - py, center_y - px, value);
+            dot(center_x + py, center_y - px, value);
+            dot(center_x + px, center_y - py, value);
+        };
+
+        const auto draw_lines = [&](Position px, Position py) {
+            // Верхняя и нижняя линии
+            line(center_x - px, center_y + py, center_x + px, center_y + py, value);
+            line(center_x - px, center_y - py, center_x + px, center_y - py, value);
+
+            // Левая и правая линии (только для fill)
+            if (fill) {
+                line(center_x - py, center_y + px, center_x + py, center_y + px, value);
+                line(center_x - py, center_y - px, center_x + py, center_y - px, value);
+            }
+        };
+
+        while (x >= y) {
+            if (fill) {
+                draw_lines(x, y);
+            } else {
+                draw_points(x, y);
+            }
+
+            y++;
+            err += 2 * y + 1;
+
+            if (2 * (err - x) + 1 > 0) {
+                x--;
+                err -= 2 * x + 1;
+            }
+        }
+    }
 };
 
 }
