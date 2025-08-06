@@ -13,15 +13,17 @@ public:
     /// Режим отрисовки
     enum class Mode {
 
-        /// Очистить
-        Clear,
-
         /// Заполнить
         Fill,
 
-        /// Только контур
-        Contour,
+        /// Очистить
+        Clear,
 
+        /// Заполнить контур
+        FillContour,
+
+        /// Очистить контур
+        ClearContour,
     };
 
 private:
@@ -34,7 +36,8 @@ public:
     explicit Graphics(FrameView &frame) :
         frame(frame) {}
 
-    /// Нарисовать точку (возвращает true если успешно)
+    /// Нарисовать точку
+    /// @returns true - success
     inline bool dot(Position x, Position y, bool on = true) {
         return frame.setPixel(x, y, on);
     }
@@ -99,14 +102,20 @@ public:
                     rect_view.value.fill(mode == Mode::Fill);
                 }
 
-                break;
+                return;
             }
-            case Mode::Contour:
-                line(x0, y0, x1, y0, true);
-                line(x0, y1, x1, y1, true);
-                line(x0, y0, x0, y1, true);
-                line(x1, y0, x1, y1, true);
-                break;
+            case Mode::FillContour:
+            case Mode::ClearContour: {
+                const bool value = mode == Mode::ClearContour;
+
+                line(x0, y0, x1, y0, value);
+                line(x0, y1, x1, y1, value);
+                line(x0, y0, x0, y1, value);
+                line(x1, y0, x1, y1, value);
+
+                return;
+            }
+
         }
     }
 };
