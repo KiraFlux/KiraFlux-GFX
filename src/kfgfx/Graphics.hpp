@@ -11,22 +11,32 @@ struct Graphics {
 public:
 
     /// Режим отрисовки
-    enum class Mode {
+    enum class Mode : rs::u8 {
 
         /// Заполнить
-        Fill,
+        Fill = 0b11,
 
         /// Очистить
-        Clear,
+        Clear = 0b01,
 
         /// Заполнить контур
-        FillContour,
+        FillContour = 0b10,
 
         /// Очистить контур
-        ClearContour,
+        ClearContour = 0b00,
     };
 
 private:
+
+    static inline bool isFillMode(Mode mode) {
+        constexpr rs::u8 fill_bit = 0b01;
+        return static_cast<rs::u8>(mode) & fill_bit;
+    }
+
+    static inline bool modeValue(Mode mode) {
+        constexpr rs::u8 value_bit = 0b10;
+        return static_cast<rs::u8>(mode) & value_bit;
+    }
 
     /// Кадр для записи
     FrameView &frame;
@@ -90,32 +100,23 @@ public:
         if (x0 > x1) { std::swap(x0, x1); }
         if (y0 > y1) { std::swap(y0, y1); }
 
-        switch (mode) {
-            case Mode::Fill:
-            case Mode::Clear: {
-                const Position width = x1 - x0 + 1;
-                const Position height = y1 - y0 + 1;
+        const bool fill = isFillMode(mode);
+        const bool value = modeValue(mode);
 
-                auto rect_view = frame.sub(width, height, x0, y0);
+        if (fill) {
+            const Position width = x1 - x0 + 1;
+            const Position height = y1 - y0 + 1;
 
-                if (rect_view.ok()) {
-                    rect_view.value.fill(mode == Mode::Fill);
-                }
+            auto rect_view = frame.sub(width, height, x0, y0);
 
-                return;
+            if (rect_view.ok()) {
+                rect_view.value.fill(value);
             }
-            case Mode::FillContour:
-            case Mode::ClearContour: {
-                const bool value = mode == Mode::ClearContour;
-
-                line(x0, y0, x1, y0, value);
-                line(x0, y1, x1, y1, value);
-                line(x0, y0, x0, y1, value);
-                line(x1, y0, x1, y1, value);
-
-                return;
-            }
-
+        } else {
+            line(x0, y0, x1, y0, value);
+            line(x0, y1, x1, y1, value);
+            line(x0, y0, x0, y1, value);
+            line(x1, y0, x1, y1, value);
         }
     }
 
@@ -125,42 +126,29 @@ public:
         Position radius,
         Mode mode
     ) {
-        const bool fill = (mode == Mode::Fill || mode == Mode::Clear);
-        const bool value = (mode == Mode::Fill || mode == Mode::FillContour);
+        const bool fill = isFillMode(mode);
+        const bool value = modeValue(mode);
 
         // Алгоритм средней точки для окружности
         Position x = radius;
         Position y = 0;
         Position err = 0;
 
-        const auto draw_points = [&](Position px, Position py) {
-            dot(center_x + px, center_y + py, value);
-            dot(center_x + py, center_y + px, value);
-            dot(center_x - py, center_y + px, value);
-            dot(center_x - px, center_y + py, value);
-            dot(center_x - px, center_y - py, value);
-            dot(center_x - py, center_y - px, value);
-            dot(center_x + py, center_y - px, value);
-            dot(center_x + px, center_y - py, value);
-        };
-
-        const auto draw_lines = [&](Position px, Position py) {
-            // Верхняя и нижняя линии
-            line(center_x - px, center_y + py, center_x + px, center_y + py, value);
-            line(center_x - px, center_y - py, center_x + px, center_y - py, value);
-
-            // Левая и правая линии (только для fill)
-            if (fill) {
-                line(center_x - py, center_y + px, center_x + py, center_y + px, value);
-                line(center_x - py, center_y - px, center_x + py, center_y - px, value);
-            }
-        };
-
         while (x >= y) {
             if (fill) {
-                draw_lines(x, y);
+                line(center_x - x, center_y + y, center_x + x, center_y + y, value);
+                line(center_x - x, center_y - y, center_x + x, center_y - y, value);
+                line(center_x - y, center_y + x, center_x + y, center_y + x, value);
+                line(center_x - y, center_y - x, center_x + y, center_y - x, value);
             } else {
-                draw_points(x, y);
+                dot(center_x + x, center_y + y, value);
+                dot(center_x + y, center_y + x, value);
+                dot(center_x - y, center_y + x, value);
+                dot(center_x - x, center_y + y, value);
+                dot(center_x - x, center_y - y, value);
+                dot(center_x - y, center_y - x, value);
+                dot(center_x + y, center_y - x, value);
+                dot(center_x + x, center_y - y, value);
             }
 
             y++;
