@@ -2,7 +2,6 @@
 
 #include "Position.hpp"
 
-#include <cstring>
 #include <algorithm>
 
 #include "rs/Result.hpp"
