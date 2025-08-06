@@ -1,7 +1,10 @@
 #pragma once
 
-#include "rs/Result.hpp"
 #include "Position.hpp"
+
+#include <cstring>
+
+#include "rs/Result.hpp"
 #include "rs/primitives.hpp"
 
 /// KiraFlux GFX
@@ -41,12 +44,7 @@ public:
     const Position offset;
 
     /// Создать представление кадра
-    static rs::Result<FrameView, Error> create(
-        rs::u8 *buffer,
-        Position::Value stride,
-        Position size,
-        Position offset
-    ) {
+    static rs::Result<FrameView, Error> create(rs::u8 *buffer, Position::Value stride, Position size, Position offset) {
         if (size.x < 1 || size.y < 1) {
             return {Error::SizeTooSmall};
         }
@@ -105,6 +103,13 @@ public:
         return buffer[getByteIndex(x, y)] & getByteBitMask(y);
     }
 
+    void fill(bool value) {
+        for (short x = 0; x < size.x; x++) {
+            for (short y = 0; y < size.y; y++) {
+                setPixel(x, y, value);
+            }
+        }
+    }
 
 private:
 
