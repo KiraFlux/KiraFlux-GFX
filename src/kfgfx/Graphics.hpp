@@ -19,11 +19,11 @@ public:
         /// Очистить
         Clear = 0b01,
 
-        /// Заполнить контур
-        FillContour = 0b10,
+        /// Заполнить только границу
+        FillBorder = 0b10,
 
-        /// Очистить контур
-        ClearContour = 0b00,
+        /// Очистить только границу
+        ClearBorder = 0b00,
     };
 
 private:

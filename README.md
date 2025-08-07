@@ -52,8 +52,8 @@ explicit Graphics(FrameView &frame);
 enum class Mode : uint8_t {
     Fill,          // Заливка области (true)
     Clear,         // Очистка области (false)
-    FillContour,   // Контур (true)
-    ClearContour   // Контур (false)
+    FillBorder,   // Контур (true)
+    ClearBorder   // Контур (false)
 };
 
 // Методы рисования
@@ -104,7 +104,7 @@ void loop() {
     
     // Рисование примитивов
     gfx.rect(10, 10, 50, 30, kfgfx::Graphics::Mode::Fill);
-    gfx.circle(64, 32, 20, kfgfx::Graphics::Mode::FillContour);
+    gfx.circle(64, 32, 20, kfgfx::Graphics::Mode::FillBorder);
     
     // Создание и использование под-области
     auto widget = main_frame.sub(40, 20, 20, 10);
