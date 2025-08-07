@@ -143,42 +143,41 @@ public:
         for (Position bitmap_page = 0; bitmap_page < BitMap<W, H>::pages_count; ++bitmap_page) {
             const rs::u8 *source = bitmap.buffer + bitmap_page * W;
 
-            auto target_page = (absoluteY(y) + (bitmap_page << 3)) >> 3;
+            auto target_page = Position((absoluteY(y) + (bitmap_page << 3)) >> 3);
             auto bit_offset = (absoluteY(y) + (bitmap_page << 3)) & 0b0111;
 
             if (target_page < 0 or target_page >= (height + 7) / 8) { continue; }
 
-            for (Position col = 0; col < W; ++col) {
-                auto target_x = absoluteX(x) + col;
+            for (Position bitmap_x = 0; bitmap_x < W; ++bitmap_x) {
+                Position target_x = absoluteX(x) + bitmap_x;
 
                 if (target_x < offset_x or target_x >= offset_x + width) { continue; }
 
-                rs::u8 value = source[col];
-                rs::u8 *target = buffer + target_page * stride + target_x;
+                rs::u8 value = source[bitmap_x];
 
                 if (bit_offset == 0) {
-                    if (on) { *target |= value; }
-                    else { *target &= ~value; }
+                    write(target_x, target_page, value, on);
                 } else {
                     if (target_page < (height + 7) / 8) {
-                        rs::u8 lower = value << bit_offset;
-                        if (on) { *target |= lower; }
-                        else { *target &= ~lower; }
+                        write(target_x, target_page, value << bit_offset, on);
                     }
 
                     if (target_page < ((height + 7) / 8) - 1) {
-                        rs::u8 upper = value >> (8 - bit_offset);
-                        target = buffer + (target_page + 1) * stride + target_x;
-                        if (on) { *target |= upper; }
-                        else { *target &= ~upper; }
+                        write(target_x, target_page + 1, value >> (8 - bit_offset), on);
                     }
                 }
             }
         }
     }
 
-
 private:
+
+    /// Записать пиксели на странице
+    void write(Position x, Position page, rs::u8 data, bool on) const {
+        const auto index = page * stride + x;
+        if (on) { buffer[index] |= data; }
+        else { buffer[index] &= ~data; }
+    }
 
     /// Создать битовую маску для диапазона [start_bit, end_bit]
     static rs::u8 createPageMask(rs::u8 start_bit, rs::u8 end_bit) {
@@ -201,7 +200,7 @@ private:
     }
 
     /// Номер страницы
-    int getPage(Position y) const {
+    inline int getPage(Position y) const {
         return absoluteY(y) >> 3;
     }
 
