@@ -7,14 +7,16 @@
 namespace kfgfx {
 
 /// БитМап изображение
-template<Position W, Position H> struct BitMap {
+template<Position W, Position H> struct BitMap final {
+    /// Ширина в пикселях
     static constexpr auto width = W;
+    /// Высота в пикселях
     static constexpr auto height = H;
+    /// Количество страниц
+    static constexpr auto pages_count = (height + 7) / 8;
 
-    static constexpr auto pages_count = (height / 8) + (height % 8 != 0);
-    static constexpr auto buffer_size = width * pages_count;
-
-    const rs::u8 buffer[buffer_size];
+    /// Буфер
+    const rs::u8 buffer[width * pages_count];
 
     BitMap() = delete;
 };
