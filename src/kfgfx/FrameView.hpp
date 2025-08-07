@@ -139,6 +139,56 @@ public:
         }
     }
 
+    template<rs::size bm_width, rs::size bm_height>
+    void drawBitmap(Position x, Position y, const BitMap<bm_width, bm_height>& bitmap, bool on = true) {
+        constexpr auto bm_pages = BitMap<bm_width, bm_height>::pages_count;
+
+        // Абсолютные координаты в буфере дисплея
+        Position abs_x = offset_x + x;
+        Position abs_y = offset_y + y;
+
+        for (Position page_idx = 0; page_idx < bm_pages; ++page_idx) {
+            const rs::u8* src = bitmap.buffer + page_idx * bm_width;
+
+            // Вычисляем целевую страницу в буфере
+            Position target_page = (abs_y + page_idx * 8) / 8;
+            Position bit_offset = (abs_y + page_idx * 8) % 8;
+
+            // Проверка границ
+            if (target_page < 0 || target_page >= (height + 7) / 8) continue;
+
+            for (Position col = 0; col < bm_width; ++col) {
+                Position target_x = abs_x + col;
+                if (target_x < offset_x || target_x >= offset_x + width) continue;
+
+                rs::u8 value = src[col];
+                rs::u8* target = buffer + target_page * stride + target_x;
+
+                // Обработка с учетом смещения
+                if (bit_offset == 0) {
+                    if (on) *target |= value;
+                    else *target &= ~value;
+                } else {
+                    // Младшие биты (текущая страница)
+                    if (target_page >= 0 && target_page < (height + 7) / 8) {
+                        rs::u8 lower = value << bit_offset;
+                        if (on) *target |= lower;
+                        else *target &= ~lower;
+                    }
+
+                    // Старшие биты (следующая страница)
+                    if (target_page + 1 < (height + 7) / 8) {
+                        rs::u8 upper = value >> (8 - bit_offset);
+                        target = buffer + (target_page + 1) * stride + target_x;
+                        if (on) *target |= upper;
+                        else *target &= ~upper;
+                    }
+                }
+            }
+        }
+    }
+
+
 private:
 
     /// Создать битовую маску для диапазона [start_bit, end_bit]
