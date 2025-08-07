@@ -117,7 +117,7 @@ public:
 
     /// Рисует битмап в указанной позиции
     template<Position W, Position H>
-    void drawBitmap(Position x, Position y, const BitMap <W, H> &bitmap, bool on = true) noexcept {
+    void drawBitmap(Position x, Position y, const BitMap<W, H> &bitmap, bool on = true) noexcept {
         const Position abs_y = offset_y + y;
 
         for (Position page_idx = 0; page_idx < BitMap<W, H>::pages_count; ++page_idx) {
@@ -208,7 +208,7 @@ public:
     /// Рисует строку битмапа
     template<Position W, Position H>
     inline void drawBitmapRow(
-        const BitMap <W, H> &bitmap,
+        const BitMap<W, H> &bitmap,
         Position page_idx,
         Position x,
         Position page_y,
@@ -230,7 +230,7 @@ public:
     }
 
     /// Записывает данные битмапа с учетом смещения
-    inline void writeBitmapData(Position abs_x, Position page_y, rs::u8 data, bool on) noexcept {
+    void writeBitmapData(Position abs_x, Position page_y, rs::u8 data, bool on) const noexcept {
         const Position page = page_y >> 3;
         const rs::u8 offset = static_cast<rs::u8>(page_y & 0x07);
 
@@ -247,7 +247,7 @@ public:
     }
 
     /// Записывает пиксель
-    inline void writePixel(Position x, Position y, bool on) noexcept {
+    inline void writePixel(Position x, Position y, bool on) const noexcept {
         const Position abs_x = toAbsoluteX(x);
         const Position page = getPage(y);
         const rs::u8 mask = getBitMask(y);

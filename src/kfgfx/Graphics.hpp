@@ -1,6 +1,8 @@
 #pragma once
 
+#include "Font.hpp"
 #include "FrameView.hpp"
+
 #include <algorithm>
 #include <cmath>
 
@@ -24,13 +26,22 @@ public:
     };
 
 private:
-    FrameView &frame;  /// Целевой кадр для рисования
+
+    /// Целевой кадр для рисования
+    FrameView &frame;
+    /// Активный шрифт
+    const Font *font{nullptr};
 
 
 public:
     /// Создает графический контекст для FrameView
     explicit Graphics(FrameView &frame) noexcept:
         frame(frame) {}
+
+    /// Установить шрифт
+    void setFont(const Font &new_font) {
+        font = &new_font;
+    }
 
     /// Рисует точку в указанных координатах
     void dot(Position x, Position y, bool on = true) noexcept {
@@ -130,16 +141,42 @@ public:
         }
     }
 
+    /// Рендерит текст с использованием текущего шрифта
+    void text(Position x, Position y, const char *str, bool on = true) noexcept {
+        if (font == nullptr) {
+            render_missing_glyphs(x, y, str, on);
+            return;
+        }
+
+        Position cursor_x = x;
+
+        // Маска для обрезки неиспользуемых битов
+        const rs::u8 height_mask = (1 << font->glyph_height) - 1;
+
+        // Обрабатываем каждый символ строки
+        for (const char *ptr = str; *ptr != '\0'; ++ptr) {
+            const rs::u8 *glyph = font->getGlyph(*ptr);
+
+            if (glyph != nullptr) {
+                renderGlyph(cursor_x, y, glyph, height_mask, on);
+            } else {
+                drawMissingGlyphBox(cursor_x, y, font->glyph_width, font->glyph_height, on);
+            }
+
+            cursor_x += (font->glyph_width + 1);
+        }
+    }
+
 private:
 
     /// Получить значение режима
-    inline bool getModeValue(Mode mode) const noexcept {
-        return (static_cast<rs::u8>(mode) & 0b10);
+    static inline bool getModeValue(Mode mode) noexcept {
+        return static_cast<rs::u8>(mode) & 0b10;
     }
 
     /// Режим является заполняющим
-    inline bool isFillMode(Mode mode) const noexcept {
-        return (static_cast<rs::u8>(mode) & 0b01);
+    static inline bool isFillMode(Mode mode) noexcept {
+        return static_cast<rs::u8>(mode) & 0b01;
     }
 
     /// Рисует горизонтальную линию (оптимизированная версия)
@@ -160,6 +197,60 @@ private:
         frame.setPixel(cx - dy, cy - dx, value);
         frame.setPixel(cx + dy, cy - dx, value);
         frame.setPixel(cx + dx, cy - dy, value);
+    }
+
+    /// Рисует прямоугольник-заглушку
+    void drawMissingGlyphBox(Position x, Position y, Position width, Position height, bool on) noexcept {
+        rect(
+            x,
+            y,
+            x + width - 1,
+            y + height - 1,
+            on ? Mode::FillBorder : Mode::ClearBorder
+        );
+    }
+
+    /// Рендерит глиф
+    void renderGlyph(
+        Position x,
+        Position y,
+        const rs::u8 *glyph,
+        rs::u8 height_mask,
+        bool on
+    ) noexcept {
+        for (rs::u8 col_index = 0; col_index < font->glyph_width; ++col_index) {
+            const Position pixel_x = x + col_index;
+            const rs::u8 glyph_data = glyph[col_index] & height_mask;
+
+            // Пропускаем пустые столбцы
+            if (glyph_data == 0) { continue; }
+
+            // Обрабатываем каждый бит в столбце
+            for (rs::u8 bit_index = 0; bit_index < font->glyph_height; ++bit_index) {
+                if (glyph_data & (1 << bit_index)) {
+                    frame.setPixel(pixel_x, y + bit_index, on);
+                }
+            }
+        }
+    }
+
+    /// Рендерит заглушки для всей строки
+    void render_missing_glyphs(
+        Position x,
+        Position y,
+        const char *str,
+        bool on
+    ) noexcept {
+        constexpr Position default_glyph_width = 3;
+        constexpr Position default_glyph_height = 5;
+
+        Position cursor_x = x;
+
+        // Обрабатываем каждый символ строки
+        for (const char *ptr = str; *ptr != '\0'; ++ptr) {
+            drawMissingGlyphBox(cursor_x, y, default_glyph_width, default_glyph_height, on);
+            cursor_x += (default_glyph_width + 1);
+        }
     }
 
 };
