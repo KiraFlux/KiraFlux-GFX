@@ -47,9 +47,8 @@ public:
         frame(frame) {}
 
     /// Нарисовать точку
-    /// @returns true - success
-    inline bool dot(Position x, Position y, bool on = true) {
-        return frame.setPixel(x, y, on);
+    inline void dot(Position x, Position y, bool on = true) {
+        frame.setPixel(x, y, on);
     }
 
     /// Нарисовать линию (алгоритм Брезенхема)

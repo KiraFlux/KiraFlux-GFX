@@ -85,19 +85,12 @@ public:
     }
 
     /// Установить состояние пикселя
-    /// @returns false on fail
-    bool setPixel(Position x, Position y, bool on) {
+    void setPixel(Position x, Position y, bool on) {
         if (isOutOfBounds(x, y)) {
-            return false;
+            return;
         }
 
-        if (on) {
-            buffer[getByteIndex(x, y)] |= getByteBitMask(y);
-        } else {
-            buffer[getByteIndex(x, y)] &= ~getByteBitMask(y);
-        }
-
-        return true;
+        write(x, getPage(y), getByteBitMask(y), on);
     }
 
     bool getPixel(Position x, Position y) const {
@@ -127,14 +120,8 @@ public:
 
             const rs::u8 mask = createPageMask(y_start - page_top, y_end - page_top);
 
-            rs::u8 *page_buffer = buffer + page * stride + offset_x;
-
             for (auto i = 0; i < width; i++) {
-                if (value) {
-                    page_buffer[i] |= mask;
-                } else {
-                    page_buffer[i] &= ~mask;
-                }
+                write(i, page, mask, value);
             }
         }
     }
@@ -143,13 +130,13 @@ public:
         for (Position bitmap_page = 0; bitmap_page < BitMap<W, H>::pages_count; ++bitmap_page) {
             const rs::u8 *source = bitmap.buffer + bitmap_page * W;
 
-            auto target_page = Position((absoluteY(y) + (bitmap_page << 3)) >> 3);
+            auto target_page = static_cast<Position>((absoluteY(y) + (bitmap_page << 3)) >> 3);
             auto bit_offset = (absoluteY(y) + (bitmap_page << 3)) & 0b0111;
 
             if (target_page < 0 or target_page >= (height + 7) / 8) { continue; }
 
             for (Position bitmap_x = 0; bitmap_x < W; ++bitmap_x) {
-                Position target_x = absoluteX(x) + bitmap_x;
+                Position target_x = bitmap_x + absoluteX(x);
 
                 if (target_x < offset_x or target_x >= offset_x + width) { continue; }
 
@@ -200,8 +187,8 @@ private:
     }
 
     /// Номер страницы
-    inline int getPage(Position y) const {
-        return absoluteY(y) >> 3;
+    inline Position getPage(Position y) const {
+        return static_cast<Position>(absoluteY(y) >> 3);
     }
 
     /// Индекс байта в буфере
