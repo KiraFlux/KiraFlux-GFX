@@ -123,45 +123,70 @@ public:
             for (auto x = 0; x < width; x++) {
                 const Position abs_x = absoluteX(x);
                 // Проверка выхода за пределы всего дисплея
-                if (abs_x < 0 || abs_x >= stride) { continue; }
+                if (abs_x < 0 or abs_x >= stride) { continue; }
                 write(abs_x, page, mask, value);
             }
         }
     }
 
-    template<Position W, Position H> void drawBitmap(Position x, Position y, const BitMap<W, H> &bitmap, bool on = true) {
-        const Position frame_left = offset_x;
-        const Position frame_right = offset_x + width;
+    template<Position W, Position H>
+    void drawBitmap(Position x, Position y, const BitMap<W, H> &bitmap, bool on = true) {
+        const Position abs_x = offset_x + x;
+        const Position abs_y = offset_y + y;
+
+        // Границы текущего FrameView
         const Position frame_top = offset_y;
         const Position frame_bottom = offset_y + height;
+        const Position frame_left = offset_x;
+        const Position frame_right = offset_x + width;
 
-        for (Position bitmap_page = 0; bitmap_page < BitMap<W, H>::pages_count; ++bitmap_page) {
-            const rs::u8 *source = bitmap.buffer + bitmap_page * W;
+        for (Position page_idx = 0; page_idx < BitMap<W, H>::pages_count; ++page_idx) {
+            const Position page_y = abs_y + page_idx * 8;
 
-            auto target_page = static_cast<Position>((absoluteY(y) + (bitmap_page << 3)) >> 3);
-            auto bit_offset = (absoluteY(y) + (bitmap_page << 3)) & 0b0111;
+            // Пропуск полностью невидимых страниц
+            if (page_y + 7 < frame_top or page_y >= frame_bottom) { continue; }
 
-            if (target_page < 0 or target_page >= (height + 7) / 8) { continue; }
+            // Расчёт обрезки сверху
+            rs::u8 clip_top = 0;
+            if (page_y < frame_top) {
+                clip_top = frame_top - page_y;
+            }
 
-            for (Position bitmap_x = 0; bitmap_x < W; ++bitmap_x) {
-                const Position target_x = bitmap_x + absoluteX(x);
-                const Position target_y = absoluteY(y) + (bitmap_page << 3);
+            // Расчёт обрезки снизу
+            rs::u8 clip_bottom = 7;
+            if (page_y + 7 >= frame_bottom) {
+                clip_bottom = frame_bottom - page_y - 1;
+            }
 
-                // Проверка выхода за границы кадра
-                if (target_x < frame_left || target_x >= frame_right) { continue; }
-                if (target_y < frame_top || target_y >= frame_bottom) { continue; }
+            // Генерация маски видимости
+            const rs::u8 mask = createPageMask(clip_top, clip_bottom);
 
-                rs::u8 value = source[bitmap_x];
+            for (Position bx = 0; bx < W; ++bx) {
+                const Position target_x = abs_x + bx;
 
+                // Проверка горизонтальных границ
+                if (target_x < frame_left or target_x >= frame_right) { continue; }
+
+                const rs::u8 data = bitmap.buffer[page_idx * W + bx] & mask;
+                if (data == 0) { continue; }
+
+                // Обработка вертикального смещения
+                const Position target_page = page_y / 8;
+                const rs::u8 bit_offset = page_y % 8;
+
+                // Запись в буфер с учётом смещения
                 if (bit_offset == 0) {
-                    write(target_x, target_page, value, on);
+                    write(target_x, target_page, data, on);
                 } else {
-                    if (target_page < (height + 7) / 8) {
-                        write(target_x, target_page, value << bit_offset, on);
+                    // Верхняя часть (текущая страница)
+                    if (target_page < (frame_bottom + 7) / 8) {
+                        write(target_x, target_page, data << bit_offset, on);
                     }
 
-                    if (target_page < ((height + 7) / 8) - 1) {
-                        write(target_x, target_page + 1, value >> (8 - bit_offset), on);
+                    // Нижняя часть (следующая страница)
+                    const Position next_page = target_page + 1;
+                    if (next_page < (frame_bottom + 7) / 8) {
+                        write(target_x, next_page, data >> (8 - bit_offset), on);
                     }
                 }
             }
