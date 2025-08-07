@@ -86,15 +86,15 @@ public:
 
     /// Установить состояние пикселя
     void setPixel(Position x, Position y, bool on) {
-        if (isOutOfBounds(x, y)) {
+        if (isOutOfBoundsX(x) or isOutOfBoundsY(y)) {
             return;
         }
 
-        write(x, getPage(y), getByteBitMask(y), on);
+        write(absoluteX(x), getPage(y), getByteBitMask(y), on);
     }
 
     bool getPixel(Position x, Position y) const {
-        if (isOutOfBounds(x, y)) {
+        if (isOutOfBoundsX(x) or isOutOfBoundsY(y)) {
             return false;
         }
 
@@ -120,8 +120,8 @@ public:
 
             const rs::u8 mask = createPageMask(y_start - page_top, y_end - page_top);
 
-            for (auto i = 0; i < width; i++) {
-                write(i, page, mask, value);
+            for (auto x = 0; x < width; x++) {
+                write(absoluteX(x), page, mask, value);
             }
         }
     }
@@ -160,8 +160,8 @@ public:
 private:
 
     /// Записать пиксели на странице
-    void write(Position x, Position page, rs::u8 data, bool on) const {
-        const auto index = page * stride + x;
+    void write(Position absolute_x, Position page, rs::u8 data, bool on) const {
+        const auto index = page * stride + absolute_x;
         if (on) { buffer[index] |= data; }
         else { buffer[index] &= ~data; }
     }
@@ -196,9 +196,14 @@ private:
         return getPage(y) * stride + absoluteX(x);
     }
 
-    /// Пиксель за границей
-    bool isOutOfBounds(Position x, Position y) const {
-        return x < 0 or y < 0 or x >= width or y >= height;
+    /// Позиция по X за границей
+    inline bool isOutOfBoundsX(Position x) const {
+        return x < 0 or x >= width;
+    }
+
+    /// Позиция по Y за границей
+    inline bool isOutOfBoundsY(Position y) const {
+        return y < 0 or y >= height;
     }
 
     explicit FrameView(
