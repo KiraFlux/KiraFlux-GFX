@@ -121,12 +121,20 @@ public:
             const rs::u8 mask = createPageMask(y_start - page_top, y_end - page_top);
 
             for (auto x = 0; x < width; x++) {
-                write(absoluteX(x), page, mask, value);
+                const Position abs_x = absoluteX(x);
+                // Проверка выхода за пределы всего дисплея
+                if (abs_x < 0 || abs_x >= stride) { continue; }
+                write(abs_x, page, mask, value);
             }
         }
     }
 
     template<Position W, Position H> void drawBitmap(Position x, Position y, const BitMap<W, H> &bitmap, bool on = true) {
+        const Position frame_left = offset_x;
+        const Position frame_right = offset_x + width;
+        const Position frame_top = offset_y;
+        const Position frame_bottom = offset_y + height;
+
         for (Position bitmap_page = 0; bitmap_page < BitMap<W, H>::pages_count; ++bitmap_page) {
             const rs::u8 *source = bitmap.buffer + bitmap_page * W;
 
@@ -136,9 +144,12 @@ public:
             if (target_page < 0 or target_page >= (height + 7) / 8) { continue; }
 
             for (Position bitmap_x = 0; bitmap_x < W; ++bitmap_x) {
-                Position target_x = bitmap_x + absoluteX(x);
+                const Position target_x = bitmap_x + absoluteX(x);
+                const Position target_y = absoluteY(y) + (bitmap_page << 3);
 
-                if (target_x < offset_x or target_x >= offset_x + width) { continue; }
+                // Проверка выхода за границы кадра
+                if (target_x < frame_left || target_x >= frame_right) { continue; }
+                if (target_y < frame_top || target_y >= frame_bottom) { continue; }
 
                 rs::u8 value = source[bitmap_x];
 

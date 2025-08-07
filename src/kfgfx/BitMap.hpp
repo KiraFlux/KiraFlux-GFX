@@ -7,7 +7,10 @@
 namespace kfgfx {
 
 /// БитМап изображение
-template<Position width, Position height> struct BitMap {
+template<Position W, Position H> struct BitMap {
+    static constexpr auto width = W;
+    static constexpr auto height = H;
+
     static constexpr auto pages_count = (height / 8) + (height % 8 != 0);
     static constexpr auto buffer_size = width * pages_count;
 

@@ -12,8 +12,8 @@
 static rs::Result<FrameView, FrameView::Error> create(
     uint8_t *buffer,        // Указатель на буфер дисплея
     int16_t stride,         // Шаг строки (ширина всего дисплея в пикселях)
-    int16_t width,          // Ширина области
-    int16_t height,         // Высота области
+    int16_t W,          // Ширина области
+    int16_t H,         // Высота области
     int16_t offset_x,       // Смещение по X
     int16_t offset_y        // Смещение по Y
 );
