@@ -86,12 +86,12 @@ void circle(int16_t cx, int16_t cy, int16_t r, Mode mode); // Окружност
 
 ## Пример использования
 ```cpp
-#include <kfgfx/FrameView.hpp>
-#include <kfgfx/Graphics.hpp>
-#include <kfgfx/BitMap.hpp>
+#include <kf/FrameView.hpp>
+#include <kf/Graphics.hpp>
+#include <kf/BitMap.hpp>
 
 // Битмап 16x16 (шахматный паттерн)
-const auto checker = kfgfx::BitMap<16, 16>{
+const auto checker = kf::BitMap<16, 16>{
     0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55,
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -100,13 +100,13 @@ const auto checker = kfgfx::BitMap<16, 16>{
 
 // Буфер дисплея 128x64
 uint8_t screen_buffer[1024] = {0};
-kfgfx::FrameView display(screen_buffer, 128, 128, 64, 0, 0);
-kfgfx::Graphics gfx(display);
+kf::FrameView display(screen_buffer, 128, 128, 64, 0, 0);
+kf::Graphics gfx(display);
 
 void setup() {
     // Создаем дочернюю область с отступом
     auto panel = display.sub(100, 50, 14, 7).value;
-    gfx.rect(0, 0, 99, 49, kfgfx::Graphics::Mode::FillBorder);
+    gfx.rect(0, 0, 99, 49, kf::Graphics::Mode::FillBorder);
     
     // Рисуем битмап в центре
     panel.drawBitmap(42, 17, checker);

@@ -3,7 +3,7 @@
 #include "rs/primitives.hpp"
 
 
-namespace kfgfx {
+namespace kf {
 
 /// Описывает позицию пикселях
 using Position = rs::i16;

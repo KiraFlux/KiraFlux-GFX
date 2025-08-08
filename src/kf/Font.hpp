@@ -4,7 +4,7 @@
 #include "Position.hpp"
 
 
-namespace kfgfx {
+namespace kf {
 
 /// Представляет моноширинный шрифт с высотой глифов до 8 пикселей
 struct Font final {
@@ -33,7 +33,7 @@ struct Font final {
 namespace fonts {
 
 /// GyverOLED EN Font
-extern Font gyver_5x7_en;
+extern const Font gyver_5x7_en;
 
 } // namespace fonts
 

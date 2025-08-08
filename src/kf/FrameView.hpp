@@ -1,12 +1,15 @@
 #pragma once
 
 #include "Position.hpp"
+#include "BitMap.hpp"
+
 #include "rs/Result.hpp"
 #include "rs/primitives.hpp"
+
 #include <algorithm>
 
 
-namespace kfgfx {
+namespace kf {
 
 /// Представление прямоугольной области дисплея
 struct FrameView final {
@@ -26,7 +29,7 @@ public:
 private:
 
     /// Указатель на буфер дисплея
-    rs::u8 *buffer_;
+    rs::u8 *buffer;
     /// Шаг строки (ширина всего дисплея)
     Position stride;
 
@@ -82,7 +85,7 @@ public:
             return Error::SizeTooLarge;
         }
 
-        return create(buffer_, stride, sub_width, sub_height, new_x, new_y);
+        return create(buffer, stride, sub_width, sub_height, new_x, new_y);
     }
 
     /// Устанавливает состояние пикселя
@@ -95,7 +98,7 @@ public:
     inline bool getPixel(Position x, Position y) const noexcept {
         if (x < 0 or x >= width or y < 0 or y >= height) { return false; }
         const auto idx = getByteIndex(x, y);
-        return buffer_[idx] & getBitMask(y);
+        return buffer[idx] & getBitMask(y);
     }
 
     /// Заливает область указанным значением
@@ -141,7 +144,7 @@ public:
         Position width,
         Position height
     ) noexcept:
-        buffer_{buffer},
+        buffer{buffer},
         stride{stride},
         offset_x{offset_x},
         offset_y{offset_y},
@@ -258,9 +261,9 @@ public:
     inline void writeData(Position abs_x, Position page, rs::u8 data, bool on) const noexcept {
         const rs::size index = page * stride + abs_x;
         if (on) {
-            buffer_[index] |= data;
+            buffer[index] |= data;
         } else {
-            buffer_[index] &= ~data;
+            buffer[index] &= ~data;
         }
     }
 

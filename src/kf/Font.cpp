@@ -101,7 +101,7 @@ static constexpr rs::u8 gyver_5x7_en_data[] = {
 };
 
 
-kfgfx::Font kfgfx::fonts::gyver_5x7_en = kfgfx::Font{
+constexpr kf::Font kf::fonts::gyver_5x7_en = kf::Font{
     .glyph_width = 5,
     .glyph_height = 7,
     .data = gyver_5x7_en_data

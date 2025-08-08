@@ -1,6 +1,6 @@
 {
   "name": "KiraFlux-GFX",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Yet another GFX Lib",
   "keywords": [
     "gfx"
@@ -22,6 +22,6 @@
     "Rustify": "https://github.com/JamahaW/Rustify.git"
   },
   "export": {
-    "include": "src/kfgfx"
+    "include": "src/kf"
   }
 }

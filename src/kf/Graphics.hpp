@@ -7,7 +7,7 @@
 #include <cmath>
 
 
-namespace kfgfx {
+namespace kf {
 
 /// Инструменты для рисования графических примитивов
 struct Graphics {
@@ -25,10 +25,11 @@ public:
         ClearBorder = 0b00,
     };
 
-private:
-
     /// Целевой кадр для рисования
     FrameView &frame;
+
+private:
+
     /// Активный шрифт
     const Font *font{nullptr};
 
@@ -41,6 +42,11 @@ public:
     /// Установить шрифт
     void setFont(const Font &new_font) {
         font = &new_font;
+    }
+
+    /// Заполняет весь фрейм
+    inline void fill(bool value) noexcept {
+        frame.fill(value);
     }
 
     /// Рисует точку в указанных координатах

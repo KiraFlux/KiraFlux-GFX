@@ -4,7 +4,7 @@
 #include "Position.hpp"
 
 
-namespace kfgfx {
+namespace kf {
 
 /// БитМап изображение
 template<Position W, Position H> struct BitMap final {
