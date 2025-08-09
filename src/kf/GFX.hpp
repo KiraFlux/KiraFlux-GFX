@@ -5,5 +5,5 @@
 #include "Position.hpp"
 #include "FrameView.hpp"
 #include "BitMap.hpp"
-#include "Graphics.hpp"
+#include "Painter.hpp"
 #include "Font.hpp"

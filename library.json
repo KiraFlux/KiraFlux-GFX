@@ -1,9 +1,14 @@
 {
   "name": "KiraFlux-GFX",
-  "version": "0.4.1",
-  "description": "Yet another GFX Lib",
+  "version": "0.5",
+  "description": "A minimalistic graphics library for embedded systems, providing efficient drawing of primitives and bitmap handling. Supports hierarchical areas, automatic clipping, and optimized algorithms for microcontrollers.",
   "keywords": [
-    "gfx"
+    "gfx",
+    "graphics",
+    "embedded",
+    "drawing",
+    "rendering",
+    "bitmap"
   ],
   "repository": {
     "type": "git",

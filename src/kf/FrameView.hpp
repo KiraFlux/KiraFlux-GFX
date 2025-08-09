@@ -273,6 +273,11 @@ public:
         const rs::u8 mask = ((1 << (end_bit + 1)) - 1) ^ ((1 << start_bit) - 1);
         return mask;
     }
+
+public:
+
+    FrameView() = delete;
+
 };
 
 } // namespace kfgfx

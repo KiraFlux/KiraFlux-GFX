@@ -10,7 +10,7 @@
 namespace kf {
 
 /// Инструменты для рисования графических примитивов
-struct Graphics {
+struct Painter {
 
 public:
     /// Режимы отрисовки фигур
@@ -26,7 +26,7 @@ public:
     };
 
     /// Целевой кадр для рисования
-    FrameView &frame;
+    FrameView frame;
 
 private:
 
@@ -36,8 +36,8 @@ private:
 
 public:
     /// Создает графический контекст для FrameView
-    explicit Graphics(FrameView &frame) noexcept:
-        frame(frame) {}
+    explicit Painter(const FrameView &frame) noexcept:
+        frame{frame} {}
 
     /// Установить шрифт
     void setFont(const Font &new_font) {
@@ -258,6 +258,10 @@ private:
             cursor_x += (default_glyph_width + 1);
         }
     }
+
+public:
+
+    Painter() = delete;
 
 };
 
