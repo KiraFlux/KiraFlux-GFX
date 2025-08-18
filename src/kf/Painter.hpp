@@ -13,6 +13,7 @@ namespace kf {
 struct Painter {
 
 public:
+
     /// Режимы отрисовки фигур
     enum class Mode : rs::u8 {
         /// Заполнить
@@ -31,41 +32,67 @@ public:
 private:
 
     /// Активный шрифт
-    const Font *font{nullptr};
-
+    const Font *current_font{nullptr};
 
 public:
+
     /// Создает графический контекст для FrameView
     explicit Painter(const FrameView &frame) noexcept:
         frame{frame} {}
 
     /// Установить шрифт
-    void setFont(const Font &new_font) {
-        font = &new_font;
-    }
+    void setFont(const Font &new_font) { current_font = &new_font; }
+
+    // Свойства
+
+    /// Ширина фрейма
+    inline Position width() const noexcept { return frame.width; }
+
+    /// Высота фрейма
+    inline Position height() const noexcept { return frame.height; }
+
+    /// Максимальное значение X внутри фрейма
+    inline Position maxX() const noexcept { return static_cast<Position>(width() - 1); }
+
+    /// Максимальное значение Y внутри фрейма
+    inline Position maxY() const noexcept { return static_cast<Position>(height() - 1); }
+
+    /// Центр фрейма X
+    inline Position centerX() const noexcept { return static_cast<Position>(maxX() / 2); }
+
+    /// Центр фрейма X
+    inline Position centerY() const noexcept { return static_cast<Position>(maxY() / 2); }
+
+    // Графика
 
     /// Заполняет весь фрейм
-    inline void fill(bool value) noexcept {
+    inline void fill(bool value) const noexcept {
         frame.fill(value);
     }
 
     /// Рисует точку в указанных координатах
-    void dot(Position x, Position y, bool on = true) noexcept {
+    inline void dot(Position x, Position y, bool on = true) const noexcept {
         frame.setPixel(x, y, on);
     }
 
-    /// Рисует линию по алгоритму Брезенхема
-    void line(Position x0, Position y0, Position x1, Position y1, bool on = true) noexcept {
-        const Position dx = std::abs(x1 - x0);
-        const Position dy = -std::abs(y1 - y0);
+    /// Рисует битмап в указанных координатах
+    template<Position W, Position H> inline void bitmap(Position x, Position y, const BitMap<W, H> &bm, bool on = true) noexcept {
+        frame.drawBitmap(x, y, bm, on);
+    }
+
+    /// Рисует линию
+    void line(Position x0, Position y0, Position x1, Position y1, bool on = true) const noexcept {
+        // алгоритм Брезенхема
+        const auto dx = static_cast<Position>(std::abs(x1 - x0));
+        const auto dy = static_cast<Position>(-std::abs(y1 - y0));
         const Position sx = (x0 < x1) ? 1 : -1;
         const Position sy = (y0 < y1) ? 1 : -1;
 
-        Position err = dx + dy;
+        auto err = dx + dy;
 
         while (true) {
             dot(x0, y0, on);
-            if (x0 == x1 && y0 == y1) { break; }
+            if (x0 == x1 and y0 == y1) { break; }
 
             const Position e2 = 2 * err;
             if (e2 >= dy) {
@@ -91,8 +118,8 @@ public:
 
         if (isFillMode(mode)) {
             // Оптимизированная заливка через subview
-            const Position width = x1 - x0 + 1;
-            const Position height = y1 - y0 + 1;
+            const auto width = static_cast<Position>(x1 - x0 + 1);
+            const auto height = static_cast<Position>(y1 - y0 + 1);
             auto view = frame.sub(width, height, x0, y0);
 
             if (view.ok()) {
@@ -104,7 +131,7 @@ public:
             drawLineHorizontal(x0, y1, x1, value);  // Нижняя сторона
 
             // Боковые стороны (исключая углы)
-            for (Position y = y0 + 1; y < y1; y++) {
+            for (auto y = static_cast<Position>(y0 + 1); y < y1; y++) {
                 frame.setPixel(x0, y, value);
                 frame.setPixel(x1, y, value);
             }
@@ -147,9 +174,9 @@ public:
         }
     }
 
-    /// Рендерит текст с использованием текущего шрифта
+    /// Рисует текст с использованием текущего шрифта
     void text(Position x, Position y, const char *str, bool on = true) noexcept {
-        if (font == nullptr) {
+        if (current_font == nullptr) {
             render_missing_glyphs(x, y, str, on);
             return;
         }
@@ -157,19 +184,19 @@ public:
         Position cursor_x = x;
 
         // Маска для обрезки неиспользуемых битов
-        const rs::u8 height_mask = (1 << font->glyph_height) - 1;
+        const rs::u8 height_mask = (1 << current_font->glyph_height) - 1;
 
         // Обрабатываем каждый символ строки
         for (const char *ptr = str; *ptr != '\0'; ++ptr) {
-            const rs::u8 *glyph = font->getGlyph(*ptr);
+            const rs::u8 *glyph = current_font->getGlyph(*ptr);
 
             if (glyph != nullptr) {
                 renderGlyph(cursor_x, y, glyph, height_mask, on);
             } else {
-                drawMissingGlyphBox(cursor_x, y, font->glyph_width, font->glyph_height, on);
+                drawMissingGlyphBox(cursor_x, y, current_font->glyph_width, current_font->glyph_height, on);
             }
 
-            cursor_x += (font->glyph_width + 1);
+            cursor_x += (current_font->glyph_width + 1);
         }
     }
 
@@ -186,7 +213,7 @@ private:
     }
 
     /// Рисует горизонтальную линию (оптимизированная версия)
-    void drawLineHorizontal(Position x0, Position y, Position x1, bool on) noexcept {
+    void drawLineHorizontal(Position x0, Position y, Position x1, bool on) const noexcept {
         if (x0 > x1) { std::swap(x0, x1); }
         for (Position x = x0; x <= x1; x++) {
             frame.setPixel(x, y, on);
@@ -194,15 +221,15 @@ private:
     }
 
     /// Рисует 8 симметричных точек окружности
-    void drawCirclePoints(Position cx, Position cy, Position dx, Position dy, bool value) noexcept {
-        frame.setPixel(cx + dx, cy + dy, value);
-        frame.setPixel(cx + dy, cy + dx, value);
-        frame.setPixel(cx - dy, cy + dx, value);
-        frame.setPixel(cx - dx, cy + dy, value);
-        frame.setPixel(cx - dx, cy - dy, value);
-        frame.setPixel(cx - dy, cy - dx, value);
-        frame.setPixel(cx + dy, cy - dx, value);
-        frame.setPixel(cx + dx, cy - dy, value);
+    void drawCirclePoints(Position cx, Position cy, Position dx, Position dy, bool value) const noexcept {
+        frame.setPixel(static_cast<Position>(cx + dx), static_cast<Position>(cy + dy), value);
+        frame.setPixel(static_cast<Position>(cx + dy), static_cast<Position>(cy + dx), value);
+        frame.setPixel(static_cast<Position>(cx - dy), static_cast<Position>(cy + dx), value);
+        frame.setPixel(static_cast<Position>(cx - dx), static_cast<Position>(cy + dy), value);
+        frame.setPixel(static_cast<Position>(cx - dx), static_cast<Position>(cy - dy), value);
+        frame.setPixel(static_cast<Position>(cx - dy), static_cast<Position>(cy - dx), value);
+        frame.setPixel(static_cast<Position>(cx + dy), static_cast<Position>(cy - dx), value);
+        frame.setPixel(static_cast<Position>(cx + dx), static_cast<Position>(cy - dy), value);
     }
 
     /// Рисует прямоугольник-заглушку
@@ -210,13 +237,13 @@ private:
         rect(
             x,
             y,
-            x + width - 1,
-            y + height - 1,
+            static_cast<Position>(x + width - 1),
+            static_cast<Position>(y + height - 1),
             on ? Mode::FillBorder : Mode::ClearBorder
         );
     }
 
-    /// Рендерит глиф
+    /// Рисует глиф
     void renderGlyph(
         Position x,
         Position y,
@@ -224,7 +251,7 @@ private:
         rs::u8 height_mask,
         bool on
     ) noexcept {
-        for (rs::u8 col_index = 0; col_index < font->glyph_width; ++col_index) {
+        for (rs::u8 col_index = 0; col_index < current_font->glyph_width; ++col_index) {
             const Position pixel_x = x + col_index;
             const rs::u8 glyph_data = glyph[col_index] & height_mask;
 
@@ -232,15 +259,15 @@ private:
             if (glyph_data == 0) { continue; }
 
             // Обрабатываем каждый бит в столбце
-            for (rs::u8 bit_index = 0; bit_index < font->glyph_height; ++bit_index) {
+            for (rs::u8 bit_index = 0; bit_index < current_font->glyph_height; ++bit_index) {
                 if (glyph_data & (1 << bit_index)) {
-                    frame.setPixel(pixel_x, y + bit_index, on);
+                    frame.setPixel(pixel_x, static_cast<Position>(y + bit_index), on);
                 }
             }
         }
     }
 
-    /// Рендерит заглушки для всей строки
+    /// Рисует заглушки для всей строки
     void render_missing_glyphs(
         Position x,
         Position y,
