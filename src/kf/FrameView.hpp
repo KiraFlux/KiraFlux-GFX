@@ -18,9 +18,9 @@ public:
 
     /// Возможные ошибки при создании FrameView
     enum class Error : rs::u8 {
-        /// Размер области меньше 1 пикселя
+        /// Размер области < 1
         SizeTooSmall,
-        /// Дочерняя область больше родительской
+        /// Дочерняя область > родительской
         SizeTooLarge,
         /// Смещение выходит за границы
         OffsetOutOfBounds
@@ -30,19 +30,19 @@ private:
 
     /// Указатель на буфер дисплея
     rs::u8 *buffer;
-    /// Шаг строки (ширина всего дисплея)
-    Position stride;
 
 public:
 
+    /// Шаг строки (ширина всего дисплея)
+    const Position stride;
     /// Абсолютное смещение по X
-    Position offset_x;
+    const Position offset_x;
     /// Абсолютное смещение по Y
-    Position offset_y;
+    const Position offset_y;
     /// Ширина области
-    Position width;
+    const Position width;
     /// Высота области
-    Position height;
+    const Position height;
 
     /// Создает FrameView с проверкой ошибок
     static rs::Result<FrameView, Error> create(
@@ -74,22 +74,23 @@ public:
         /// Смещение по Y относительно родителя
         Position sub_offset_y
     ) const noexcept {
-        const Position new_x = offset_x + sub_offset_x;
-        const Position new_y = offset_y + sub_offset_y;
-
         // Проверка выхода за границы родителя
         if (sub_offset_x >= width or sub_offset_y >= height) {
             return Error::OffsetOutOfBounds;
         }
+
         if (sub_width > width - sub_offset_x or sub_height > height - sub_offset_y) {
             return Error::SizeTooLarge;
         }
+
+        const auto new_x = static_cast<Position>(offset_x + sub_offset_x);
+        const auto new_y = static_cast<Position>(offset_y + sub_offset_y);
 
         return create(buffer, stride, sub_width, sub_height, new_x, new_y);
     }
 
     /// Устанавливает состояние пикселя
-    inline void setPixel(Position x, Position y, bool on) noexcept {
+    inline void setPixel(Position x, Position y, bool on) const noexcept {
         if (x < 0 or x >= width or y < 0 or y >= height) { return; }
         writePixel(x, y, on);
     }
@@ -97,14 +98,14 @@ public:
     /// Возвращает состояние пикселя
     inline bool getPixel(Position x, Position y) const noexcept {
         if (x < 0 or x >= width or y < 0 or y >= height) { return false; }
-        const auto idx = getByteIndex(x, y);
-        return buffer[idx] & getBitMask(y);
+        const auto index = getByteIndex(x, y);
+        return buffer[index] & getBitMask(y);
     }
 
     /// Заливает область указанным значением
-    void fill(bool value) noexcept {
-        const Position start_page = (offset_y) >> 3;
-        const Position end_page = (offset_y + height + 6) >> 3;
+    void fill(bool value) const noexcept {
+        const auto start_page = static_cast<Position>((offset_y) >> 3);
+        const auto end_page = static_cast<Position>((offset_y + height + 6) >> 3);
 
         for (Position page = start_page; page <= end_page; ++page) {
             const rs::u8 mask = calculatePageMask(page);
@@ -119,12 +120,11 @@ public:
     }
 
     /// Рисует битмап в указанной позиции
-    template<Position W, Position H>
-    void drawBitmap(Position x, Position y, const BitMap<W, H> &bitmap, bool on = true) noexcept {
-        const Position abs_y = offset_y + y;
+    template<Position W, Position H> void drawBitmap(Position x, Position y, const BitMap<W, H> &bitmap, bool on = true) noexcept {
+        const auto abs_y = static_cast<Position>(offset_y + y);
 
         for (Position page_idx = 0; page_idx < BitMap<W, H>::pages_count; ++page_idx) {
-            const Position page_y = abs_y + (page_idx << 3);
+            const auto page_y = static_cast<Position>(abs_y + (page_idx << 3));
 
             // Пропуск невидимых страниц
             if (page_y + 7 < offset_y or page_y >= offset_y + height) { continue; }
@@ -154,17 +154,17 @@ public:
 
     /// Преобразует X в абсолютную координату
     inline Position toAbsoluteX(Position x) const noexcept {
-        return offset_x + x;
+        return static_cast<Position>(offset_x + x);
     }
 
     /// Преобразует Y в абсолютную координату
     inline Position toAbsoluteY(Position y) const noexcept {
-        return offset_y + y;
+        return static_cast<Position>(offset_y + y);
     }
 
     /// Возвращает номер страницы для Y
     inline Position getPage(Position y) const noexcept {
-        return toAbsoluteY(y) >> 3;
+        return static_cast<Position>(toAbsoluteY(y) >> 3);
     }
 
     /// Возвращает битовую маску для Y
@@ -179,11 +179,11 @@ public:
 
     /// Вычисляет маску видимости для страницы
     inline rs::u8 calculatePageMask(Position page) const noexcept {
-        const Position page_top = page << 3;
-        const Position page_bottom = page_top + 7;
+        const auto page_top = static_cast<Position>(page << 3);
+        const auto page_bottom = static_cast<Position>(page_top + 7);
 
         const Position visible_top = std::max(offset_y, page_top);
-        const Position visible_bottom = std::min(offset_y + height, page_bottom + 1);
+        const auto visible_bottom = static_cast<Position>(std::min(offset_y + height, page_bottom + 1));
 
         if (visible_top >= visible_bottom) { return 0; }
 
@@ -209,8 +209,7 @@ public:
     }
 
     /// Рисует строку битмапа
-    template<Position W, Position H>
-    inline void drawBitmapRow(
+    template<Position W, Position H> inline void drawBitmapRow(
         const BitMap<W, H> &bitmap,
         Position page_idx,
         Position x,
@@ -219,10 +218,10 @@ public:
         bool on
     ) noexcept {
         const rs::u8 *source = bitmap.buffer + page_idx * W;
-        const Position abs_x = offset_x + x;
+        const auto abs_x = static_cast<Position>(offset_x + x);
 
         for (Position bx = 0; bx < W; ++bx) {
-            const Position target_x = abs_x + bx;
+            const auto target_x = static_cast<Position>(abs_x + bx);
             if (target_x < offset_x or target_x >= offset_x + width) { continue; }
 
             const rs::u8 data = source[bx] & mask;
@@ -234,8 +233,8 @@ public:
 
     /// Записывает данные битмапа с учетом смещения
     void writeBitmapData(Position abs_x, Position page_y, rs::u8 data, bool on) const noexcept {
-        const Position page = page_y >> 3;
-        const rs::u8 offset = static_cast<rs::u8>(page_y & 0x07);
+        const auto page = static_cast<Position>(page_y >> 3);
+        const auto offset = static_cast<rs::u8>(page_y & 0x07);
 
         if (offset == 0) {
             writeData(abs_x, page, data, on);
@@ -244,7 +243,7 @@ public:
             writeData(abs_x, page, data << offset, on);
 
             // Нижняя часть (следующая страница)
-            const Position next_page = page + 1;
+            const auto next_page = static_cast<Position>(page + 1);
             writeData(abs_x, next_page, data >> (8 - offset), on);
         }
     }
