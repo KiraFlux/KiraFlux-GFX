@@ -223,11 +223,7 @@ public:
             // Оптимизированная заливка через subview
             const auto width = static_cast<Position>(x1 - x0 + 1);
             const auto height = static_cast<Position>(y1 - y0 + 1);
-            auto view = frame.sub(width, height, x0, y0);
-
-            if (view.ok()) {
-                view.value.fill(value);
-            }
+            frame.subUnchecked(width, height, x0, y0).fill(value);
         } else {
             // Рисование границ без дублирования углов
             drawLineHorizontal(x0, y0, x1, value);  // Верхняя сторона
