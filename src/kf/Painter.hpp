@@ -37,6 +37,7 @@ private:
 
     /// Позиция курсора X
     Position cursor_x{0};
+
     /// Позиция курсора Y
     Position cursor_y{0};
 
@@ -69,10 +70,10 @@ public:
 
     // Свойства
 
-    /// Ширина фрейма
+    /// Ширина фрейма (Размер X)
     inline Position width() const noexcept { return frame.width; }
 
-    /// Высота фрейма
+    /// Высота фрейма (Размер Y)
     inline Position height() const noexcept { return frame.height; }
 
     /// Максимальное значение X внутри фрейма
@@ -93,7 +94,7 @@ public:
     /// Максимальная позиция Y для глифа активного шрифта
     inline Position maxGlyphY() const noexcept { return static_cast<Position>(height() - current_font->glyph_height); }
 
-    /// Ширина табуляции
+    /// Ширина табуляции (Размер X)
     inline Position tabWidth() const noexcept { return static_cast<Position>(current_font->widthTotal() * 4); }
 
     // Графика
@@ -115,6 +116,20 @@ public:
 
     /// Рисует линию
     void line(Position x0, Position y0, Position x1, Position y1, bool on = true) const noexcept {
+        if (x0 == x1) {
+            if (y0 == y1) {
+                dot(x0, y0, on);
+            } else {
+                drawLineVertical(x0, y0, y1, on);
+            }
+            return;
+        }
+
+        if (y0 == y1) {
+            drawLineHorizontal(x0, y0, x1, on);
+            return;
+        }
+
         // алгоритм Брезенхема
         const auto dx = static_cast<Position>(std::abs(x1 - x0));
         const auto dy = static_cast<Position>(-std::abs(y1 - y0));
@@ -252,56 +267,26 @@ public:
                 continue;
             }
             if (*text == '\x82') {
-
                 const auto new_x = centerX();
-
-                rect(
-                    cursor_x,
-                    cursor_y,
-                    new_x,
-                    static_cast<Position>(cursor_y + current_font->glyph_height),
-                    on ? Mode::Clear : Mode::Fill
-                );
-
+                clearLineSegment(new_x, on);
                 cursor_x = new_x;
                 continue;
             }
             if (*text == '\n') {
-                rect(
-                    cursor_x,
-                    cursor_y,
-                    maxX(),
-                    static_cast<Position>(cursor_y + current_font->glyph_height),
-                    on ? Mode::Clear : Mode::Fill
-                );
-
+                clearLineSegment(maxX(), on);
                 nextLine();
                 continue;
             }
             if (*text == '\t') {
                 const auto tab_width = tabWidth();
                 const auto new_x = static_cast<Position>(((cursor_x / tab_width) + 1) * tab_width);
-
-                rect(
-                    cursor_x,
-                    cursor_y,
-                    new_x,
-                    static_cast<Position>(cursor_y + current_font->glyph_height),
-                    on ? Mode::Clear : Mode::Fill
-                );
-
+                clearLineSegment(new_x, on);
                 cursor_x = new_x;
                 continue;
             }
 
             if (cursor_x > maxGlyphX()) {
-                rect(
-                    cursor_x,
-                    cursor_y,
-                    maxX(),
-                    static_cast<Position>(cursor_y + current_font->glyph_height),
-                    on ? Mode::Clear : Mode::Fill
-                );
+                clearLineSegment(maxX(), on);
 
                 if (auto_next_line) {
                     nextLine();
@@ -332,6 +317,17 @@ public:
     }
 
 private:
+
+    /// Очистить сегмент строки от курсора
+    void clearLineSegment(Position x, bool on) noexcept {
+        rect(
+            cursor_x,
+            cursor_y,
+            x,
+            static_cast<Position>(cursor_y + current_font->glyph_height),
+            on ? Mode::Clear : Mode::Fill
+        );
+    }
 
     /// Перенести курсор на следующую строку
     void nextLine() noexcept {
