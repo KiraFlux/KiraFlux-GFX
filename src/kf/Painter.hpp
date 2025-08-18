@@ -3,7 +3,6 @@
 #include "Font.hpp"
 #include "FrameView.hpp"
 
-#include <algorithm>
 #include <cmath>
 
 
@@ -35,10 +34,16 @@ private:
     /// Всегда указывает на экземпляр шрифта
     /// Гарантированно не nullptr
     const Font *current_font;
+
+    /// Позиция курсора X
     Position cursor_x{0};
+    /// Позиция курсора Y
     Position cursor_y{0};
 
 public:
+
+    /// Автоматический перенос строки
+    bool auto_next_line{false};
 
     explicit Painter(const FrameView &frame, const Font &font = Font::blank()) noexcept:
         frame{frame}, current_font{&font} {}
@@ -87,6 +92,9 @@ public:
 
     /// Максимальная позиция Y для глифа активного шрифта
     inline Position maxGlyphY() const noexcept { return static_cast<Position>(height() - current_font->glyph_height); }
+
+    /// Ширина табуляции
+    inline Position tabWidth() const noexcept { return static_cast<Position>(current_font->widthTotal() * 4); }
 
     // Графика
 
@@ -226,9 +234,11 @@ public:
     }
 
     /// Рисует текст с использованием текущего шрифта.
+    /// @details <code>'\\n'</code> для перехода на новую строку
+    /// @details <code>'\\t'</code> для табуляции
     /// @details <code>'\\x80'</code> для нормального текста
     /// @details <code>'\\x81'</code> для инверсии текста
-    /// @details <code>'\\n'</code> для перехода на новую строку
+    /// @details <code>'\\x82'</code> для установки курсора по центру фрейма
     void text(rs::str text) noexcept {
         bool on = true;
 
@@ -241,13 +251,63 @@ public:
                 on = false;
                 continue;
             }
+            if (*text == '\x82') {
+
+                const auto new_x = centerX();
+
+                rect(
+                    cursor_x,
+                    cursor_y,
+                    new_x,
+                    static_cast<Position>(cursor_y + current_font->glyph_height),
+                    on ? Mode::Clear : Mode::Fill
+                );
+
+                cursor_x = new_x;
+                continue;
+            }
             if (*text == '\n') {
+                rect(
+                    cursor_x,
+                    cursor_y,
+                    maxX(),
+                    static_cast<Position>(cursor_y + current_font->glyph_height),
+                    on ? Mode::Clear : Mode::Fill
+                );
+
                 nextLine();
+                continue;
+            }
+            if (*text == '\t') {
+                const auto tab_width = tabWidth();
+                const auto new_x = static_cast<Position>(((cursor_x / tab_width) + 1) * tab_width);
+
+                rect(
+                    cursor_x,
+                    cursor_y,
+                    new_x,
+                    static_cast<Position>(cursor_y + current_font->glyph_height),
+                    on ? Mode::Clear : Mode::Fill
+                );
+
+                cursor_x = new_x;
                 continue;
             }
 
             if (cursor_x > maxGlyphX()) {
-                nextLine();
+                rect(
+                    cursor_x,
+                    cursor_y,
+                    maxX(),
+                    static_cast<Position>(cursor_y + current_font->glyph_height),
+                    on ? Mode::Clear : Mode::Fill
+                );
+
+                if (auto_next_line) {
+                    nextLine();
+                } else {
+                    return;
+                }
             }
 
             if (cursor_y > maxGlyphY()) {
