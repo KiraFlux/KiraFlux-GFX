@@ -59,9 +59,43 @@ public:
         /// Смещение по Y
         Position offset_y
     ) noexcept {
-        if (width < 1 or height < 1) { return Error::SizeTooSmall; }
-        return FrameView(buffer, stride, offset_x, offset_y, width, height);
+        if (width < 1 or height < 1) {
+            return Error::SizeTooSmall;
+        }
+        return FrameView(buffer, stride, width, height, offset_x, offset_y);
     }
+
+    /// Создать FrameView без проверок
+    /// @warning unsafe
+    explicit FrameView(
+        /// Буфер дисплея
+        /// Должен быть валидным и иметь достаточный размер
+        rs::u8 *buffer,
+
+        /// Шаг строки (ширина дисплея)
+        /// > 1
+        Position stride,
+
+        /// Ширина области
+        /// > 1
+        Position width,
+
+        /// Высота области
+        /// > 1
+        Position height,
+
+        /// Смещение X
+        Position offset_x,
+
+        /// Смещение Y
+        Position offset_y
+    ) noexcept:
+        buffer{buffer},
+        stride{stride},
+        offset_x{offset_x},
+        offset_y{offset_y},
+        width{width},
+        height{height} {}
 
     /// Создает дочернюю область
     rs::Result<FrameView, Error> sub(
@@ -88,6 +122,36 @@ public:
 
         return create(buffer, stride, sub_width, sub_height, new_x, new_y);
     }
+
+    /// Создает дочернюю область без проверок
+    /// @warning unsafe
+    FrameView subUnchecked(
+        /// Ширина дочерней области.
+        /// sub_width не более parent.width
+        Position sub_width,
+
+        /// Высота дочерней области.
+        /// sub_height не более parent.height
+        Position sub_height,
+
+        /// Смещение по X относительно родителя.
+        /// 0 .. (parent.width - sub_width)
+        Position sub_offset_x,
+
+        /// Смещение по Y относительно родителя.
+        /// 0 .. (parent.height - sub_height)
+        Position sub_offset_y
+    ) {
+        return FrameView{
+            buffer,
+            stride,
+            sub_width,
+            sub_height,
+            static_cast<Position>(offset_x + sub_offset_x),
+            static_cast<Position>(offset_y + sub_offset_y)
+        };
+    }
+
 
     /// Устанавливает состояние пикселя
     inline void setPixel(Position x, Position y, bool on) const noexcept {
@@ -132,21 +196,6 @@ public:
             drawBitmapRow(bitmap, page_idx, x, page_y, mask, on);
         }
     }
-
-    explicit FrameView(
-        rs::u8 *buffer,
-        Position stride,
-        Position offset_x,
-        Position offset_y,
-        Position width,
-        Position height
-    ) noexcept:
-        buffer{buffer},
-        stride{stride},
-        offset_x{offset_x},
-        offset_y{offset_y},
-        width{width},
-        height{height} {}
 
 
     /// Преобразует X в абсолютную координату

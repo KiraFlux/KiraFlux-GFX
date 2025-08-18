@@ -51,18 +51,40 @@ public:
 
     /// Создать дочернюю область графического контекста
     rs::Result<Painter, FrameView::Error> sub(
-        Position sub_width,
-        Position sub_height,
-        Position sub_offset_x,
-        Position sub_offset_y
+        Position width,
+        Position height,
+        Position offset_x,
+        Position offset_y
     ) {
-        const auto frame_result = frame.sub(sub_width, sub_height, sub_offset_x, sub_offset_y);
+        const auto frame_result = frame.sub(width, height, offset_x, offset_y);
 
         if (frame_result.fail()) {
             return {frame_result.error};
         }
 
         return {Painter{frame_result.value, *current_font}};
+    }
+
+    /// Создать дочернюю область графического контекста без проверок
+    /// @warning unsafe
+    Painter subUnchecked(
+        /// Ширина дочерней области.
+        /// sub_width не более parent.width()
+        Position width,
+
+        /// Высота дочерней области.
+        /// sub_height не более parent.height()
+        Position height,
+
+        /// Смещение по X относительно родителя.
+        /// 0 .. (parent.width() - sub_width)
+        Position offset_x,
+
+        /// Смещение по Y относительно родителя.
+        /// 0 .. (parent.height() - sub_height)
+        Position offset_y
+    ) {
+        return Painter{frame.subUnchecked(width, height, offset_x, offset_y), *current_font};
     }
 
     /// Установить шрифт
