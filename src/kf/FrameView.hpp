@@ -31,18 +31,19 @@ private:
     /// Указатель на буфер дисплея
     rs::u8 *buffer;
 
+    /// Шаг строки (ширина всего дисплея)
+    Position stride;
+
 public:
 
-    /// Шаг строки (ширина всего дисплея)
-    const Position stride;
     /// Абсолютное смещение по X
-    const Position offset_x;
+    Position offset_x;
     /// Абсолютное смещение по Y
-    const Position offset_y;
+    Position offset_y;
     /// Ширина области
-    const Position width;
+    Position width;
     /// Высота области
-    const Position height;
+    Position height;
 
     /// Создает FrameView с проверкой ошибок
     static rs::Result<FrameView, Error> create(
@@ -64,6 +65,8 @@ public:
         }
         return FrameView(buffer, stride, width, height, offset_x, offset_y);
     }
+
+    FrameView() noexcept = default;
 
     /// Создать FrameView без проверок
     /// @warning unsafe
@@ -151,7 +154,6 @@ public:
             static_cast<Position>(offset_y + sub_offset_y)
         };
     }
-
 
     /// Устанавливает состояние пикселя
     inline void setPixel(Position x, Position y, bool on) const noexcept {
@@ -318,11 +320,6 @@ public:
         const rs::u8 mask = ((1 << (end_bit + 1)) - 1) ^ ((1 << start_bit) - 1);
         return mask;
     }
-
-public:
-
-    FrameView() = delete;
-
 };
 
 } // namespace kfgfx

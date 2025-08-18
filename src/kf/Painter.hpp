@@ -4,6 +4,7 @@
 #include "FrameView.hpp"
 
 #include <cmath>
+#include <array>
 
 
 namespace kf {
@@ -12,6 +13,8 @@ namespace kf {
 struct Painter {
 
 public:
+
+    explicit Painter() noexcept = default;
 
     /// Режимы отрисовки фигур
     enum class Mode : rs::u8 {
@@ -26,14 +29,14 @@ public:
     };
 
     /// Целевой кадр для рисования
-    FrameView frame;
+    FrameView frame{};
 
 private:
 
     /// Активный шрифт
     /// Всегда указывает на экземпляр шрифта
     /// Гарантированно не nullptr
-    const Font *current_font;
+    const Font *current_font{};
 
     /// Позиция курсора X
     Position cursor_x{0};
@@ -118,6 +121,36 @@ public:
 
     /// Ширина табуляции (Размер X)
     inline Position tabWidth() const noexcept { return static_cast<Position>(current_font->widthTotal() * 4); }
+
+    // Управление
+
+    /// Создаёт дочерние области с горизонтальным разделением
+    template<rs::size N> std::array<Painter, N> splitHorizontally(std::array<rs::u8, N> weights) {
+        auto sizes = calculateSplitSizes<N>(width(), weights);
+        std::array<Painter, N> painters;
+        Position x = 0;
+
+        for (rs::size i = 0; i < N; ++i) {
+            painters[i] = subUnchecked(sizes[i], height(), x, 0);
+            x += sizes[i];
+        }
+
+        return painters;
+    }
+
+    /// Создаёт дочерние области с вертикальным разделением
+    template<rs::size N> std::array<Painter, N> splitVertically(std::array<rs::u8, N> weights) {
+        auto sizes = calculateSplitSizes<N>(height(), weights);
+        std::array<Painter, N> painters;
+        Position y = 0;
+
+        for (rs::size i = 0; i < N; ++i) {
+            painters[i] = subUnchecked(width(), sizes[i], 0, y);
+            y += sizes[i];
+        }
+
+        return painters;
+    }
 
     // Графика
 
@@ -340,6 +373,31 @@ public:
 
 private:
 
+    /// Рассчитывает размеры областей для разделения
+    template<rs::size N> std::array<Position, N> calculateSplitSizes(Position total_size, std::array<rs::u8, N> weights) {
+        for (auto &w: weights) {
+            if (w <= 0) { w = 1; }
+        }
+
+        Position total_weight = 0;
+        for (auto w: weights) { total_weight += w; }
+
+        std::array<Position, N> sizes;
+        Position remaining = total_size;
+
+        for (rs::size i = 0; i < N; ++i) {
+            sizes[i] = (total_size * weights[i]) / total_weight;
+            remaining -= sizes[i];
+        }
+
+        for (rs::size i = 0; remaining > 0; i = (i + 1) % N) {
+            sizes[i] += 1;
+            remaining -= 1;
+        }
+
+        return sizes;
+    }
+
     /// Очистить сегмент строки от курсора
     void clearLineSegment(Position x, bool on) noexcept {
         rect(
@@ -417,11 +475,6 @@ private:
             }
         }
     }
-
-public:
-
-    Painter() = delete;
-
 };
 
 } // namespace kf
