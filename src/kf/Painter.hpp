@@ -104,24 +104,24 @@ public:
         // алгоритм Брезенхема
         const auto dx = static_cast<Position>(std::abs(x1 - x0));
         const auto dy = static_cast<Position>(-std::abs(y1 - y0));
-        const Position sx = (x0 < x1) ? 1 : -1;
-        const Position sy = (y0 < y1) ? 1 : -1;
+        const auto sx = (x0 < x1) ? 1 : -1;
+        const auto sy = (y0 < y1) ? 1 : -1;
 
-        auto err = dx + dy;
+        auto error = dx + dy;
 
         while (true) {
             dot(x0, y0, on);
             if (x0 == x1 and y0 == y1) { break; }
 
-            const Position e2 = 2 * err;
-            if (e2 >= dy) {
+            const auto double_error = 2 * error;
+            if (double_error >= dy) {
                 if (x0 == x1) { break; }
-                err += dy;
+                error += dy;
                 x0 += sx;
             }
-            if (e2 <= dx) {
+            if (double_error <= dx) {
                 if (y0 == y1) { break; }
-                err += dx;
+                error += dx;
                 y0 += sy;
             }
         }
@@ -158,12 +158,12 @@ public:
     }
 
     /// Рисует окружность с указанным режимом
-    void circle(Position cx, Position cy, Position r, Mode mode) noexcept {
+    void circle(Position center_x, Position center_y, Position r, Mode mode) noexcept {
         const bool value = getModeValue(mode);
 
         Position x = r;
         Position y = 0;
-        Position err = 0;
+        auto err = 0;
 
         while (x >= y) {
             const Position last_y = y;
@@ -178,16 +178,16 @@ public:
             if (isFillMode(mode)) {
                 const Position start_x = (x == last_y) ? last_y : x;
 
-                drawLineHorizontal(cx - start_x, cy + last_y, cx + start_x, value);
-                drawLineHorizontal(cx - start_x, cy - last_y, cx + start_x, value);
-                drawLineHorizontal(cx - last_y, cy + x, cx + last_y, value);
-                drawLineHorizontal(cx - last_y, cy - x, cx + last_y, value);
+                drawLineHorizontal(center_x - start_x, center_y + last_y, center_x + start_x, value);
+                drawLineHorizontal(center_x - start_x, center_y - last_y, center_x + start_x, value);
+                drawLineHorizontal(center_x - last_y, center_y + x, center_x + last_y, value);
+                drawLineHorizontal(center_x - last_y, center_y - x, center_x + last_y, value);
             } else {
-                drawCirclePoints(cx, cy, x, y, value);
+                drawCirclePoints(center_x, center_y, x, y, value);
 
                 // Дополнительные точки для гладкости
                 if (x != y) {
-                    drawCirclePoints(cx, cy, y, x, value);
+                    drawCirclePoints(center_x, center_y, y, x, value);
                 }
             }
         }
@@ -271,7 +271,7 @@ private:
         bool on
     ) noexcept {
         for (rs::u8 col_index = 0; col_index < current_font->glyph_width; ++col_index) {
-            const Position pixel_x = x + col_index;
+            const auto pixel_x = static_cast<Position>(x + col_index);
             const rs::u8 glyph_data = glyph[col_index] & height_mask;
 
             // Пропускаем пустые столбцы

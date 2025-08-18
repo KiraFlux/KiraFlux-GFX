@@ -98,8 +98,7 @@ public:
     /// Возвращает состояние пикселя
     inline bool getPixel(Position x, Position y) const noexcept {
         if (x < 0 or x >= width or y < 0 or y >= height) { return false; }
-        const auto index = getByteIndex(x, y);
-        return buffer[index] & getBitMask(y);
+        return buffer[getByteIndex(x, y)] & getBitMask(y);
     }
 
     /// Заливает область указанным значением
@@ -121,10 +120,8 @@ public:
 
     /// Рисует битмап в указанной позиции
     template<Position W, Position H> void drawBitmap(Position x, Position y, const BitMap<W, H> &bitmap, bool on = true) noexcept {
-        const auto abs_y = static_cast<Position>(offset_y + y);
-
         for (Position page_idx = 0; page_idx < BitMap<W, H>::pages_count; ++page_idx) {
-            const auto page_y = static_cast<Position>(abs_y + (page_idx << 3));
+            const auto page_y = static_cast<Position>(toAbsoluteY(y) + (page_idx << 3));
 
             // Пропуск невидимых страниц
             if (page_y + 7 < offset_y or page_y >= offset_y + height) { continue; }
