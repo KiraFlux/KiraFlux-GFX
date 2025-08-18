@@ -1,7 +1,7 @@
 {
   "name": "KiraFlux-GFX",
-  "version": "0.5",
-  "description": "A minimalistic graphics library for embedded systems, providing efficient drawing of primitives and bitmap handling. Supports hierarchical areas, automatic clipping, and optimized algorithms for microcontrollers.",
+  "version": "0.6",
+  "description": "Minimalistic embedded graphics library with hierarchical frame support, efficient primitives, and text rendering. Optimized for resource-constrained systems.",
   "keywords": [
     "gfx",
     "graphics",
@@ -17,7 +17,8 @@
   "authors": [
     {
       "name": "JamahaW",
-      "email": "kiraflux@duck.com"
+      "email": "kiraflux@duck.com",
+      "maintainer": true
     }
   ],
   "license": "MIT",
