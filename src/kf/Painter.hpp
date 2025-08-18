@@ -194,28 +194,25 @@ public:
     }
 
     /// Рисует текст с использованием текущего шрифта
-    void text(Position x, Position y, const char *str, bool on = true) noexcept {
-        if (current_font == nullptr) {
-            render_missing_glyphs(x, y, str, on);
-            return;
-        }
-
+    void text(Position x, Position y, rs::str text, bool on = true) noexcept {
         Position cursor_x = x;
 
         // Маска для обрезки неиспользуемых битов
         const rs::u8 height_mask = (1 << current_font->glyph_height) - 1;
 
-        // Обрабатываем каждый символ строки
-        for (const char *ptr = str; *ptr != '\0'; ++ptr) {
-            const rs::u8 *glyph = current_font->getGlyph(*ptr);
+        for (; *text != '\0'; ++text) {
+            const rs::u8 *glyph = current_font->getGlyph(*text);
 
-            if (glyph != nullptr) {
-                renderGlyph(cursor_x, y, glyph, height_mask, on);
+            if (glyph == nullptr) {
+                drawMissingGlyphBox(cursor_x, y, on);
             } else {
-                drawMissingGlyphBox(cursor_x, y, current_font->glyph_width, current_font->glyph_height, on);
+                drawGlyph(cursor_x, y, glyph, height_mask, on);
             }
+            cursor_x += (current_font->glyph_width);
 
-            cursor_x += (current_font->glyph_width + 1);
+            drawLineVertical(cursor_x, y, static_cast<Position>(y + current_font->glyph_height), not on);
+
+            cursor_x += 1;
         }
     }
 
@@ -231,10 +228,18 @@ private:
         return static_cast<rs::u8>(mode) & 0b01;
     }
 
-    /// Рисует горизонтальную линию (оптимизированная версия)
+    /// Рисует горизонтальную линию
     void drawLineHorizontal(Position x0, Position y, Position x1, bool on) const noexcept {
         if (x0 > x1) { std::swap(x0, x1); }
         for (Position x = x0; x <= x1; x++) {
+            frame.setPixel(x, y, on);
+        }
+    }
+
+    /// Рисует вертикальную линию
+    void drawLineVertical(Position x, Position y0, Position y1, bool on) const noexcept {
+        if (y0 > y1) { std::swap(y0, y1); }
+        for (Position y = y0; y <= y1; y++) {
             frame.setPixel(x, y, on);
         }
     }
@@ -252,18 +257,18 @@ private:
     }
 
     /// Рисует прямоугольник-заглушку
-    void drawMissingGlyphBox(Position x, Position y, Position width, Position height, bool on) noexcept {
+    void drawMissingGlyphBox(Position x, Position y, bool on) noexcept {
         rect(
             x,
             y,
-            static_cast<Position>(x + width - 1),
-            static_cast<Position>(y + height - 1),
+            static_cast<Position>(x + current_font->glyph_width - 1),
+            static_cast<Position>(y + current_font->glyph_height - 1),
             on ? Mode::FillBorder : Mode::ClearBorder
         );
     }
 
     /// Рисует глиф
-    void renderGlyph(
+    void drawGlyph(
         Position x,
         Position y,
         const rs::u8 *glyph,
@@ -274,34 +279,12 @@ private:
             const auto pixel_x = static_cast<Position>(x + col_index);
             const rs::u8 glyph_data = glyph[col_index] & height_mask;
 
-            // Пропускаем пустые столбцы
-            if (glyph_data == 0) { continue; }
-
             // Обрабатываем каждый бит в столбце
             for (rs::u8 bit_index = 0; bit_index < current_font->glyph_height; ++bit_index) {
-                if (glyph_data & (1 << bit_index)) {
-                    frame.setPixel(pixel_x, static_cast<Position>(y + bit_index), on);
-                }
+                const bool lit = glyph_data & (1 << bit_index);
+                frame.setPixel(pixel_x, static_cast<Position>(y + bit_index), lit == on);
             }
-        }
-    }
-
-    /// Рисует заглушки для всей строки
-    void render_missing_glyphs(
-        Position x,
-        Position y,
-        const char *str,
-        bool on
-    ) noexcept {
-        constexpr Position default_glyph_width = 3;
-        constexpr Position default_glyph_height = 5;
-
-        Position cursor_x = x;
-
-        // Обрабатываем каждый символ строки
-        for (const char *ptr = str; *ptr != '\0'; ++ptr) {
-            drawMissingGlyphBox(cursor_x, y, default_glyph_width, default_glyph_height, on);
-            cursor_x += (default_glyph_width + 1);
+            frame.setPixel(pixel_x, static_cast<Position>(y + current_font->glyph_height), not on);
         }
     }
 
@@ -311,4 +294,4 @@ public:
 
 };
 
-} // namespace kfgfx
+} // namespace kf
