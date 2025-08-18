@@ -32,9 +32,16 @@ public:
 private:
 
     /// Активный шрифт
-    const Font *current_font{nullptr};
+    /// Всегда указывает на экземпляр шрифта
+    /// Гарантированно не nullptr
+    const Font *current_font;
+//    Position cursor_x{0}; // todo
+//    Position cursor_y{0};
 
 public:
+
+    explicit Painter(const FrameView &frame, const Font &font = Font::blank()) noexcept:
+        frame{frame}, current_font{&font} {}
 
     /// Создать дочернюю область графического контекста
     rs::Result<Painter, FrameView::Error> sub(
@@ -49,18 +56,11 @@ public:
             return {frame_result.error};
         }
 
-        return {Painter{frame_result.value, current_font}};
+        return {Painter{frame_result.value, *current_font}};
     }
 
-    /// Создает графический контекст для FrameView
-    explicit Painter(const FrameView &frame) noexcept:
-        frame{frame} {}
-
-    explicit Painter(const FrameView &frame, const Font *font) noexcept:
-        frame{frame}, current_font{font} {}
-
     /// Установить шрифт
-    void setFont(const Font &new_font) { current_font = &new_font; }
+    void setFont(const Font &font) { current_font = &font; }
 
     // Свойства
 

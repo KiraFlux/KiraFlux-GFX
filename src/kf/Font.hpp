@@ -14,17 +14,27 @@ struct Font final {
     /// Код последнего символа в шрифте
     static constexpr char end_char = 127;
 
-    /// Ширина одного глифа в пикселях
-    rs::u8 glyph_width;
-    /// Высота глифа в пикселях (1-8)
-    rs::u8 glyph_height;
     /// Данные шрифта (массив глифов)
     const rs::u8 *data;
+    /// Ширина одного глифа в пикселях
+    const rs::u8 glyph_width;
+    /// Высота глифа в пикселях (1-8)
+    const rs::u8 glyph_height;
 
-    /// Возвращает указатель на данные глифа для символа
+    /// Получить экземпляр пустого шрифта
+    static const Font &blank() {
+        static Font instance{
+            .data=nullptr,
+            .glyph_width=3,
+            .glyph_height=5,
+        };
+        return instance;
+    }
+
+    /// Получить указатель на данные глифа для символа
     /// @returns nullptr если символ вне диапазона
     const rs::u8 *getGlyph(char c) const noexcept {
-        if (c < start_char or c > end_char) { return nullptr; }
+        if (data == nullptr or c < start_char or c > end_char) { return nullptr; }
         return data + (static_cast<rs::size>(c - start_char) * glyph_width);
     }
 };
