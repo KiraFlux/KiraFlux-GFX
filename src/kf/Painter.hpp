@@ -82,6 +82,8 @@ public:
     /// Центр фрейма X
     inline Position centerY() const noexcept { return static_cast<Position>(maxY() / 2); }
 
+    inline Position maxGlyphX() const noexcept { return static_cast<Position>(width() - current_font->glyph_width); }
+
     // Графика
 
     /// Заполняет весь фрейм
@@ -216,6 +218,7 @@ public:
     /// Рисует текст с использованием текущего шрифта.
     /// @details <code>'\\x80'</code> для нормального текста
     /// @details <code>'\\x81'</code> для инверсии текста
+    /// @details <code>'\\n'</code> для перехода на новую строку
     void text(Position x, Position y, rs::str text) noexcept {
         Position cursor_x = x;
         Position cursor_y = y;
@@ -223,7 +226,6 @@ public:
         bool on = true;
 
         for (; *text != '\0'; text += 1) {
-
             if (*text == '\x80') {
                 on = true;
                 continue;
@@ -232,22 +234,38 @@ public:
                 on = false;
                 continue;
             }
+            if (*text == '\n') {
+
+                cursor_x = x;
+                cursor_y = static_cast<Position>(cursor_y + current_font->heightTotal());
+
+                continue;
+            }
+
+            if (cursor_x > maxGlyphX()) {
+
+                cursor_x = x;
+                cursor_y = static_cast<Position>(cursor_y + current_font->heightTotal());
+
+            }
 
             // Отрисовка символа
-            drawGlyph(cursor_x, y, current_font->getGlyph(*text), on);
+            drawGlyph(cursor_x, cursor_y, current_font->getGlyph(*text), on);
 
             // Обновление позиции курсора
             cursor_x = static_cast<Position>(cursor_x + current_font->glyph_width);
 
             // Отрисовка вертикального разделителя
-            drawLineVertical(
-                cursor_x,
-                y,
-                static_cast<Position>(y + current_font->glyph_height),
-                not on
-            );
+            if (cursor_x < width()) {
+                drawLineVertical(
+                    cursor_x,
+                    cursor_y,
+                    static_cast<Position>(cursor_y + current_font->glyph_height),
+                    not on
+                );
+            }
 
-            cursor_x += 1;
+            cursor_x = static_cast<Position>(cursor_x + 1);
         }
     }
 

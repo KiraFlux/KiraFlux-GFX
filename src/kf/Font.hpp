@@ -31,6 +31,12 @@ struct Font final {
         return instance;
     }
 
+    /// Полная ширина глифа
+    inline rs::u8 widthTotal() const noexcept { return glyph_width + 1; }
+
+    /// Полная высота глифа
+    inline rs::u8 heightTotal() const noexcept { return glyph_height + 1; }
+
     /// Получить указатель на данные глифа для символа
     /// @returns nullptr если символ вне диапазона
     const rs::u8 *getGlyph(char c) const noexcept {
