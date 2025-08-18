@@ -24,9 +24,9 @@ struct Font final {
     /// Получить экземпляр пустого шрифта
     static const Font &blank() {
         static Font instance{
-            .data=nullptr,
-            .glyph_width=3,
-            .glyph_height=5,
+            nullptr,
+            3,
+            5,
         };
         return instance;
     }

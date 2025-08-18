@@ -117,12 +117,12 @@ public:
             if (double_error >= dy) {
                 if (x0 == x1) { break; }
                 error += dy;
-                x0 += sx;
+                x0 = static_cast<Position>(x0 + sx);
             }
             if (double_error <= dx) {
                 if (y0 == y1) { break; }
                 error += dx;
-                y0 += sy;
+                y0 = static_cast<Position>(y0 + sy);
             }
         }
     }
@@ -178,10 +178,30 @@ public:
             if (isFillMode(mode)) {
                 const Position start_x = (x == last_y) ? last_y : x;
 
-                drawLineHorizontal(center_x - start_x, center_y + last_y, center_x + start_x, value);
-                drawLineHorizontal(center_x - start_x, center_y - last_y, center_x + start_x, value);
-                drawLineHorizontal(center_x - last_y, center_y + x, center_x + last_y, value);
-                drawLineHorizontal(center_x - last_y, center_y - x, center_x + last_y, value);
+                drawLineHorizontal(
+                    static_cast<Position>(center_x - start_x),
+                    static_cast<Position>(center_y + last_y),
+                    static_cast<Position>(center_x + start_x),
+                    value
+                );
+                drawLineHorizontal(
+                    static_cast<Position>(center_x - start_x),
+                    static_cast<Position>(center_y - last_y),
+                    static_cast<Position>(center_x + start_x),
+                    value
+                );
+                drawLineHorizontal(
+                    static_cast<Position>(center_x - last_y),
+                    static_cast<Position>(center_y + x),
+                    static_cast<Position>(center_x + last_y),
+                    value
+                );
+                drawLineHorizontal(
+                    static_cast<Position>(center_x - last_y),
+                    static_cast<Position>(center_y - x),
+                    static_cast<Position>(center_x + last_y),
+                    value
+                );
             } else {
                 drawCirclePoints(center_x, center_y, x, y, value);
 
@@ -193,24 +213,39 @@ public:
         }
     }
 
-    /// Рисует текст с использованием текущего шрифта
-    void text(Position x, Position y, rs::str text, bool on = true) noexcept {
+    /// Рисует текст с использованием текущего шрифта.
+    /// @details <code>'\\x80'</code> для нормального текста
+    /// @details <code>'\\x81'</code> для инверсии текста
+    void text(Position x, Position y, rs::str text) noexcept {
         Position cursor_x = x;
+        Position cursor_y = y;
 
-        // Маска для обрезки неиспользуемых битов
-        const rs::u8 height_mask = (1 << current_font->glyph_height) - 1;
+        bool on = true;
 
-        for (; *text != '\0'; ++text) {
-            const rs::u8 *glyph = current_font->getGlyph(*text);
+        for (; *text != '\0'; text += 1) {
 
-            if (glyph == nullptr) {
-                drawMissingGlyphBox(cursor_x, y, on);
-            } else {
-                drawGlyph(cursor_x, y, glyph, height_mask, on);
+            if (*text == '\x80') {
+                on = true;
+                continue;
             }
-            cursor_x += (current_font->glyph_width);
+            if (*text == '\x81') {
+                on = false;
+                continue;
+            }
 
-            drawLineVertical(cursor_x, y, static_cast<Position>(y + current_font->glyph_height), not on);
+            // Отрисовка символа
+            drawGlyph(cursor_x, y, current_font->getGlyph(*text), on);
+
+            // Обновление позиции курсора
+            cursor_x = static_cast<Position>(cursor_x + current_font->glyph_width);
+
+            // Отрисовка вертикального разделителя
+            drawLineVertical(
+                cursor_x,
+                y,
+                static_cast<Position>(y + current_font->glyph_height),
+                not on
+            );
 
             cursor_x += 1;
         }
@@ -256,35 +291,26 @@ private:
         frame.setPixel(static_cast<Position>(cx + dx), static_cast<Position>(cy - dy), value);
     }
 
-    /// Рисует прямоугольник-заглушку
-    void drawMissingGlyphBox(Position x, Position y, bool on) noexcept {
-        rect(
-            x,
-            y,
-            static_cast<Position>(x + current_font->glyph_width - 1),
-            static_cast<Position>(y + current_font->glyph_height - 1),
-            on ? Mode::FillBorder : Mode::ClearBorder
-        );
-    }
-
     /// Рисует глиф
-    void drawGlyph(
-        Position x,
-        Position y,
-        const rs::u8 *glyph,
-        rs::u8 height_mask,
-        bool on
-    ) noexcept {
+    void drawGlyph(Position x, Position y, const rs::u8 *glyph, bool on) noexcept {
+        if (glyph == nullptr) {
+            rect(
+                x,
+                y,
+                static_cast<Position>(x + current_font->glyph_width - 1),
+                static_cast<Position>(y + current_font->glyph_height - 1),
+                on ? Mode::FillBorder : Mode::ClearBorder
+            );
+            return;
+        }
+
         for (rs::u8 col_index = 0; col_index < current_font->glyph_width; ++col_index) {
             const auto pixel_x = static_cast<Position>(x + col_index);
-            const rs::u8 glyph_data = glyph[col_index] & height_mask;
 
-            // Обрабатываем каждый бит в столбце
-            for (rs::u8 bit_index = 0; bit_index < current_font->glyph_height; ++bit_index) {
-                const bool lit = glyph_data & (1 << bit_index);
+            for (rs::u8 bit_index = 0; bit_index <= current_font->glyph_height; ++bit_index) {
+                const bool lit = glyph[col_index] & (1 << bit_index);
                 frame.setPixel(pixel_x, static_cast<Position>(y + bit_index), lit == on);
             }
-            frame.setPixel(pixel_x, static_cast<Position>(y + current_font->glyph_height), not on);
         }
     }
 
