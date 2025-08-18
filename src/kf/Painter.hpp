@@ -35,8 +35,8 @@ private:
     /// Всегда указывает на экземпляр шрифта
     /// Гарантированно не nullptr
     const Font *current_font;
-//    Position cursor_x{0}; // todo
-//    Position cursor_y{0};
+    Position cursor_x{0};
+    Position cursor_y{0};
 
 public:
 
@@ -82,7 +82,11 @@ public:
     /// Центр фрейма X
     inline Position centerY() const noexcept { return static_cast<Position>(maxY() / 2); }
 
+    /// Максимальная позиция X для глифа активного шрифта
     inline Position maxGlyphX() const noexcept { return static_cast<Position>(width() - current_font->glyph_width); }
+
+    /// Максимальная позиция Y для глифа активного шрифта
+    inline Position maxGlyphY() const noexcept { return static_cast<Position>(height() - current_font->glyph_height); }
 
     // Графика
 
@@ -215,14 +219,17 @@ public:
         }
     }
 
+    /// Установить позицию курсора
+    void setCursor(Position x, Position y) noexcept {
+        cursor_x = x;
+        cursor_y = y;
+    }
+
     /// Рисует текст с использованием текущего шрифта.
     /// @details <code>'\\x80'</code> для нормального текста
     /// @details <code>'\\x81'</code> для инверсии текста
     /// @details <code>'\\n'</code> для перехода на новую строку
-    void text(Position x, Position y, rs::str text) noexcept {
-        Position cursor_x = x;
-        Position cursor_y = y;
-
+    void text(rs::str text) noexcept {
         bool on = true;
 
         for (; *text != '\0'; text += 1) {
@@ -235,27 +242,22 @@ public:
                 continue;
             }
             if (*text == '\n') {
-
-                cursor_x = x;
-                cursor_y = static_cast<Position>(cursor_y + current_font->heightTotal());
-
+                nextLine();
                 continue;
             }
 
             if (cursor_x > maxGlyphX()) {
-
-                cursor_x = x;
-                cursor_y = static_cast<Position>(cursor_y + current_font->heightTotal());
-
+                nextLine();
             }
 
-            // Отрисовка символа
+            if (cursor_y > maxGlyphY()) {
+                return;
+            }
+
             drawGlyph(cursor_x, cursor_y, current_font->getGlyph(*text), on);
 
-            // Обновление позиции курсора
             cursor_x = static_cast<Position>(cursor_x + current_font->glyph_width);
 
-            // Отрисовка вертикального разделителя
             if (cursor_x < width()) {
                 drawLineVertical(
                     cursor_x,
@@ -270,6 +272,12 @@ public:
     }
 
 private:
+
+    /// Перенести курсор на следующую строку
+    void nextLine() noexcept {
+        cursor_x = 0;
+        cursor_y = static_cast<Position>(cursor_y + current_font->heightTotal());
+    }
 
     /// Получить значение режима
     static inline bool getModeValue(Mode mode) noexcept {
