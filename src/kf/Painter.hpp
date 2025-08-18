@@ -36,9 +36,28 @@ private:
 
 public:
 
+    /// Создать дочернюю область графического контекста
+    rs::Result<Painter, FrameView::Error> sub(
+        Position sub_width,
+        Position sub_height,
+        Position sub_offset_x,
+        Position sub_offset_y
+    ) {
+        const auto frame_result = frame.sub(sub_width, sub_height, sub_offset_x, sub_offset_y);
+
+        if (frame_result.fail()) {
+            return {frame_result.error};
+        }
+
+        return {Painter{frame_result.value, current_font}};
+    }
+
     /// Создает графический контекст для FrameView
     explicit Painter(const FrameView &frame) noexcept:
         frame{frame} {}
+
+    explicit Painter(const FrameView &frame, const Font *font) noexcept:
+        frame{frame}, current_font{font} {}
 
     /// Установить шрифт
     void setFont(const Font &new_font) { current_font = &new_font; }
