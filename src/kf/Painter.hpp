@@ -49,6 +49,9 @@ public:
     /// Автоматический перенос строки
     bool auto_next_line{false};
 
+    /// Цвет печатаемого текста
+    bool text_value_on{true};
+
     explicit Painter(const FrameView &frame, const Font &font = Font::blank()) noexcept:
         frame{frame}, current_font{&font} {}
 
@@ -306,38 +309,37 @@ public:
     /// @details <code>'\\x81'</code> для инверсии текста
     /// @details <code>'\\x82'</code> для установки курсора по центру фрейма
     void text(rs::str text) noexcept {
-        bool on = true;
 
         for (; *text != '\0'; text += 1) {
             if (*text == '\x80') {
-                on = true;
+                text_value_on = true;
                 continue;
             }
             if (*text == '\x81') {
-                on = false;
+                text_value_on = false;
                 continue;
             }
             if (*text == '\x82') {
                 const auto new_x = centerX();
-                clearLineSegment(new_x, on);
+                clearLineSegment(new_x, text_value_on);
                 cursor_x = new_x;
                 continue;
             }
             if (*text == '\n') {
-                clearLineSegment(maxX(), on);
+                clearLineSegment(maxX(), text_value_on);
                 nextLine();
                 continue;
             }
             if (*text == '\t') {
                 const auto tab_width = tabWidth();
                 const auto new_x = static_cast<Position>(((cursor_x / tab_width) + 1) * tab_width);
-                clearLineSegment(new_x, on);
+                clearLineSegment(new_x, text_value_on);
                 cursor_x = new_x;
                 continue;
             }
 
             if (cursor_x > maxGlyphX()) {
-                clearLineSegment(maxX(), on);
+                clearLineSegment(maxX(), text_value_on);
 
                 if (auto_next_line) {
                     nextLine();
@@ -350,7 +352,7 @@ public:
                 return;
             }
 
-            drawGlyph(cursor_x, cursor_y, current_font->getGlyph(*text), on);
+            drawGlyph(cursor_x, cursor_y, current_font->getGlyph(*text));
 
             cursor_x = static_cast<Position>(cursor_x + current_font->glyph_width);
 
@@ -359,7 +361,7 @@ public:
                     cursor_x,
                     cursor_y,
                     static_cast<Position>(cursor_y + current_font->glyph_height),
-                    not on
+                    not text_value_on
                 );
             }
 
@@ -450,14 +452,14 @@ private:
     }
 
     /// Рисует глиф
-    void drawGlyph(Position x, Position y, const rs::u8 *glyph, bool on) noexcept {
+    void drawGlyph(Position x, Position y, const rs::u8 *glyph) noexcept {
         if (glyph == nullptr) {
             rect(
                 x,
                 y,
                 static_cast<Position>(x + current_font->glyph_width - 1),
                 static_cast<Position>(y + current_font->glyph_height - 1),
-                on ? Mode::FillBorder : Mode::ClearBorder
+                text_value_on ? Mode::FillBorder : Mode::ClearBorder
             );
             return;
         }
@@ -467,7 +469,7 @@ private:
 
             for (rs::u8 bit_index = 0; bit_index <= current_font->glyph_height; ++bit_index) {
                 const bool lit = glyph[col_index] & (1 << bit_index);
-                frame.setPixel(pixel_x, static_cast<Position>(y + bit_index), lit == on);
+                frame.setPixel(pixel_x, static_cast<Position>(y + bit_index), lit == text_value_on);
             }
         }
     }

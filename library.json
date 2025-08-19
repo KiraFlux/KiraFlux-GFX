@@ -1,6 +1,6 @@
 {
   "name": "KiraFlux-GFX",
-  "version": "0.6",
+  "version": "0.6.2",
   "description": "Minimalistic embedded graphics library with hierarchical frame support, efficient primitives, and text rendering. Optimized for resource-constrained systems.",
   "keywords": [
     "gfx",
