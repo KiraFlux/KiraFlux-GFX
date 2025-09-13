@@ -4,7 +4,7 @@
 #include "BitMap.hpp"
 
 #include "rs/Result.hpp"
-#include "rs/primitives.hpp"
+#include "rs/aliases.hpp"
 
 #include <algorithm>
 

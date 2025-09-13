@@ -1,6 +1,6 @@
 #pragma once
 
-#include <rs/primitives.hpp>
+#include <rs/aliases.hpp>
 #include "Position.hpp"
 
 
