@@ -12,11 +12,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/JamahaW/KiraFlux-GFX.git"
+    "url": "https://github.com/KiraFlux/KiraFlux-GFX.git"
   },
   "authors": [
     {
-      "name": "JamahaW",
+      "name": "KiraFlux",
       "email": "kiraflux@duck.com",
       "maintainer": true
     }
@@ -25,7 +25,7 @@
   "frameworks": "*",
   "platforms": "*",
   "dependencies": {
-    "Rustify": "https://github.com/JamahaW/Rustify.git"
+    "Rustify": "https://github.com/KiraFlux/Rustify.git"
   },
   "export": {
     "include": "src/kf"
