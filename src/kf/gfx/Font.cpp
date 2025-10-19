@@ -100,7 +100,7 @@ static constexpr rs::u8 gyver_5x7_en_data[] = {
     0x04, 0x02, 0x04, 0x08, 0x04, // ~ 0x7e 126
 };
 
-constexpr kf::Font kf::fonts::gyver_5x7_en = kf::Font{
+constexpr kf::gfx::Font kf::gfx::fonts::gyver_5x7_en = kf::gfx::Font{
     gyver_5x7_en_data,
     5,
     7,

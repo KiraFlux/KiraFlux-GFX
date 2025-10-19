@@ -14,8 +14,8 @@
 static rs::Result<FrameView, Error> create(  
     rs::u8* buffer,  
     Position stride,  
-    Position width,  
-    Position height,  
+    Position screen_width,  
+    Position screen_height,  
     Position offset_x,  
     Position offset_y  
 ) noexcept;  
@@ -27,8 +27,8 @@ static rs::Result<FrameView, Error> create(
 FrameView(  
     rs::u8* buffer,  
     Position stride,  
-    Position width,  
-    Position height,  
+    Position screen_width,  
+    Position screen_height,  
     Position offset_x,  
     Position offset_y  
 ) noexcept;  
@@ -103,8 +103,8 @@ void drawBitmap(
 ```cpp
 template<Position W, Position H>  
 struct BitMap {  
-    static constexpr Position width = W;  
-    static constexpr Position height = H;  
+    static constexpr Position screen_width = W;  
+    static constexpr Position screen_height = H;  
     const rs::u8 buffer[W * ((H + 7) / 8)];  
 };  
 ```  
@@ -155,50 +155,50 @@ const rs::u8* getGlyph(char c) const noexcept;
 
 ---
 
-#### **Painter**
+#### **Canvas**
 
 Инструмент для рисования с поддержкой текста и примитивов.
 
 **Инициализация:**
 
 ```cpp
-explicit Painter(  
+explicit Canvas(  
     const FrameView& frame,  
     const Font& font = Font::blank()  
 ) noexcept;  
 ```  
 
-Создает Painter, привязанный к области и шрифту.
+Создает Canvas, привязанный к области и шрифту.
 
 ---
 
-**Методы Painter:**
+**Методы Canvas:**
 
 ```cpp
-rs::Result<Painter, FrameView::Error> sub(  
-    Position width,  
-    Position height,  
+rs::Result<Canvas, FrameView::Error> sub(  
+    Position screen_width,  
+    Position screen_height,  
     Position offset_x,  
     Position offset_y  
 );  
 ```  
 
-Создает дочерний Painter с проверкой ошибок.
+Создает дочерний Canvas с проверкой ошибок.
 
 ```cpp
-Painter subUnchecked(  
-    Position width,  
-    Position height,  
+Canvas subUnchecked(  
+    Position screen_width,  
+    Position screen_height,  
     Position offset_x,  
     Position offset_y  
 ) noexcept;  
 ```  
 
-Создает дочерний Painter без проверок.
+Создает дочерний Canvas без проверок.
 
 ```cpp
 template<rs::size N>  
-std::array<Painter, N> splitHorizontally(  
+std::array<Canvas, N> splitHorizontally(  
     std::array<rs::u8, N> weights  
 );  
 ```  
@@ -207,12 +207,12 @@ std::array<Painter, N> splitHorizontally(
 
 ```cpp
 // 25% | 75%  
-auto[left, right] = painter.splitHorizontally<2>({ 1, 3 });  
+auto[left, right] = canvas.splitHorizontally<2>({ 1, 3 });  
 ```  
 
 ```cpp
 template<rs::size N>  
-std::array<Painter, N> splitVertically(  
+std::array<Canvas, N> splitVertically(  
     std::array<rs::u8, N> weights  
 );  
 ```  
@@ -288,23 +288,23 @@ void circle(Position cx, Position cy, Position r, Mode mode) noexcept;
 
 ```cpp
 // Установка начала текста в центр  
-painter.setCursor(painter.centerX(), 10);
-painter.text("\x82Hello World");
+canvas.setCursor(canvas.centerX(), 10);
+canvas.text("\x82Hello World");
 
 // Ручное центрирование  
 auto text = "Centered";
-Position text_width = strlen(text) * painter.current_font->glyph_width;
-Position start_x = painter.centerX() - text_width/2;
-painter.setCursor(start_x, 10);
-painter.text(text);
+Position text_width = strlen(text) * canvas.current_font->glyph_width;
+Position start_x = canvas.centerX() - text_width/2;
+canvas.setCursor(start_x, 10);
+canvas.text(text);
 ```  
 
 **2. Динамический интерфейс:**
 
 ```cpp
-void create_ui(kf::Painter& painter) {
+void create_ui(kf::Canvas& canvas) {
     // Разделение на заголовок и контент
-    auto [header, content] = painter.splitVertically<2>({1, 5});
+    auto [header, content] = canvas.splitVertically<2>({1, 5});
     
     // Заголовок
     header.fill(true);
@@ -312,28 +312,28 @@ void create_ui(kf::Painter& painter) {
     header.text("\x82\x80Dashboard"); // Центрированный белый текст
     
     // Контент-область
-    content.rect(0, 0, content.width()-1, content.height()-1, 
-                 Painter::Mode::FillBorder);
+    content.rect(0, 0, content.screen_width()-1, content.screen_height()-1, 
+                 Canvas::Mode::FillBorder);
 }
 ```
 
 **3. Анимация с примитивами:**
 
 ```cpp
-void animate(kf::Painter& painter) {
+void animate(kf::Canvas& canvas) {
     static Position y = 0;
-    painter.fill(false); // Очистка
+    canvas.fill(false); // Очистка
     
     // Двигающаяся линия
-    painter.line(0, y, painter.width()-1, y);
+    canvas.line(0, y, canvas.screen_width()-1, y);
     
     // Прыгающий круг
     static Position radius = 5;
-    Position cx = painter.width() / 2;
+    Position cx = canvas.screen_width() / 2;
     Position cy = y + radius + 2;
-    painter.circle(cx, cy, radius, Painter::Mode::FillBorder);
+    canvas.circle(cx, cy, radius, Canvas::Mode::FillBorder);
     
-    y = (y + 1) % painter.height();
+    y = (y + 1) % canvas.screen_height();
     radius = 3 + (y % 10);
 }
 ```
@@ -369,7 +369,7 @@ void animate(kf::Painter& painter) {
 
 ```cpp
 // Отключение авто-переноса
-painter.auto_next_line = false;
+canvas.auto_next_line = false;
 ```  
 
 Лицензия: MIT ([LICENSE](./LICENSE))

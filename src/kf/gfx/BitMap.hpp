@@ -1,10 +1,10 @@
 #pragma once
 
-#include <rs/aliases.hpp>
+#include <kf/gfx/Position.hpp>
 #include "Position.hpp"
 
 
-namespace kf {
+namespace kf::gfx {
 
 /// БитМап изображение
 template<Position W, Position H> struct BitMap final {

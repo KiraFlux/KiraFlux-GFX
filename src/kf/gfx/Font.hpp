@@ -1,11 +1,11 @@
 #pragma once
 
 #include <rs/aliases.hpp>
-#include "Position.hpp"
+
+#include <kf/gfx/Position.hpp>
 
 
-namespace kf {
-
+namespace kf::gfx {
 /// Представляет моноширинный шрифт с высотой глифов до 8 пикселей
 struct Font final {
 
@@ -32,14 +32,14 @@ struct Font final {
     }
 
     /// Полная ширина глифа
-    inline rs::u8 widthTotal() const noexcept { return glyph_width + 1; }
+    [[nodiscard]] inline rs::u8 widthTotal() const noexcept { return glyph_width + 1; }
 
     /// Полная высота глифа
-    inline rs::u8 heightTotal() const noexcept { return glyph_height + 1; }
+    [[nodiscard]] inline rs::u8 heightTotal() const noexcept { return glyph_height + 1; }
 
     /// Получить указатель на данные глифа для символа
     /// @returns nullptr если символ вне диапазона
-    const rs::u8 *getGlyph(char c) const noexcept {
+    [[nodiscard]] const rs::u8 *getGlyph(char c) const noexcept {
         if (data == nullptr or c < start_char or c > end_char) { return nullptr; }
         return data + (static_cast<rs::size>(c - start_char) * glyph_width);
     }
@@ -51,6 +51,9 @@ namespace fonts {
 /// GyverOLED EN Font
 extern const Font gyver_5x7_en;
 
-} // namespace fonts
+}
+}
 
-} // namespace kfgfx
+// namespace fonts
+
+// namespace kf::gfx

@@ -1,20 +1,22 @@
 #pragma once
 
-#include "Font.hpp"
-#include "FrameView.hpp"
-
 #include <cmath>
 #include <array>
 
+#include <kf/gfx/Font.hpp>
+#include <kf/gfx/FrameView.hpp>
+#include <kf/gfx/BitMap.hpp>
+#include <kf/gfx/Position.hpp>
 
-namespace kf {
+
+namespace kf::gfx {
 
 /// Инструменты для рисования графических примитивов
-struct Painter {
+struct Canvas {
 
 public:
 
-    explicit Painter() noexcept = default;
+    explicit Canvas() noexcept = default;
 
     /// Режимы отрисовки фигур
     enum class Mode : rs::u8 {
@@ -49,14 +51,11 @@ public:
     /// Автоматический перенос строки
     bool auto_next_line{false};
 
-    /// Цвет печатаемого текста
-    bool text_value_on{true};
-
-    explicit Painter(const FrameView &frame, const Font &font = Font::blank()) noexcept:
+    explicit Canvas(const FrameView &frame, const Font &font = Font::blank()) noexcept:
         frame{frame}, current_font{&font} {}
 
     /// Создать дочернюю область графического контекста
-    rs::Result<Painter, FrameView::Error> sub(
+    rs::Result<Canvas, FrameView::Error> sub(
         Position width,
         Position height,
         Position offset_x,
@@ -68,12 +67,12 @@ public:
             return {frame_result.error};
         }
 
-        return {Painter{frame_result.value, *current_font}};
+        return {Canvas{frame_result.value, *current_font}};
     }
 
     /// Создать дочернюю область графического контекста без проверок
     /// @warning unsafe
-    Painter subUnchecked(
+    Canvas subUnchecked(
         /// Ширина дочерней области.
         /// sub_width не более parent.width()
         Position width,
@@ -90,7 +89,7 @@ public:
         /// 0 .. (parent.height() - sub_height)
         Position offset_y
     ) {
-        return Painter{frame.subUnchecked(width, height, offset_x, offset_y), *current_font};
+        return Canvas{frame.subUnchecked(width, height, offset_x, offset_y), *current_font};
     }
 
     /// Установить шрифт
@@ -99,38 +98,38 @@ public:
     // Свойства
 
     /// Ширина фрейма (Размер X)
-    inline Position width() const noexcept { return frame.width; }
+    [[nodiscard]] inline Position width() const noexcept { return frame.width; }
 
     /// Высота фрейма (Размер Y)
-    inline Position height() const noexcept { return frame.height; }
+    [[nodiscard]] inline Position height() const noexcept { return frame.height; }
 
     /// Максимальное значение X внутри фрейма
-    inline Position maxX() const noexcept { return static_cast<Position>(width() - 1); }
+    [[nodiscard]] inline Position maxX() const noexcept { return static_cast<Position>(width() - 1); }
 
     /// Максимальное значение Y внутри фрейма
-    inline Position maxY() const noexcept { return static_cast<Position>(height() - 1); }
+    [[nodiscard]] inline Position maxY() const noexcept { return static_cast<Position>(height() - 1); }
 
     /// Центр фрейма X
-    inline Position centerX() const noexcept { return static_cast<Position>(maxX() / 2); }
+    [[nodiscard]] inline Position centerX() const noexcept { return static_cast<Position>(maxX() / 2); }
 
     /// Центр фрейма X
-    inline Position centerY() const noexcept { return static_cast<Position>(maxY() / 2); }
+    [[nodiscard]] inline Position centerY() const noexcept { return static_cast<Position>(maxY() / 2); }
 
     /// Максимальная позиция X для глифа активного шрифта
-    inline Position maxGlyphX() const noexcept { return static_cast<Position>(width() - current_font->glyph_width); }
+    [[nodiscard]] inline Position maxGlyphX() const noexcept { return static_cast<Position>(width() - current_font->glyph_width); }
 
     /// Максимальная позиция Y для глифа активного шрифта
-    inline Position maxGlyphY() const noexcept { return static_cast<Position>(height() - current_font->glyph_height); }
+    [[nodiscard]] inline Position maxGlyphY() const noexcept { return static_cast<Position>(height() - current_font->glyph_height); }
 
     /// Ширина табуляции (Размер X)
-    inline Position tabWidth() const noexcept { return static_cast<Position>(current_font->widthTotal() * 4); }
+    [[nodiscard]] inline Position tabWidth() const noexcept { return static_cast<Position>(current_font->widthTotal() * 4); }
 
     // Управление
 
     /// Создаёт дочерние области с горизонтальным разделением
-    template<rs::size N> std::array<Painter, N> splitHorizontally(std::array<rs::u8, N> weights) {
+    template<rs::size N> std::array<Canvas, N> splitHorizontally(std::array<rs::u8, N> weights) {
         auto sizes = calculateSplitSizes<N>(width(), weights);
-        std::array<Painter, N> painters;
+        std::array<Canvas, N> painters;
         Position x = 0;
 
         for (rs::size i = 0; i < N; ++i) {
@@ -142,9 +141,9 @@ public:
     }
 
     /// Создаёт дочерние области с вертикальным разделением
-    template<rs::size N> std::array<Painter, N> splitVertically(std::array<rs::u8, N> weights) {
+    template<rs::size N> std::array<Canvas, N> splitVertically(std::array<rs::u8, N> weights) {
         auto sizes = calculateSplitSizes<N>(height(), weights);
-        std::array<Painter, N> painters;
+        std::array<Canvas, N> painters;
         Position y = 0;
 
         for (rs::size i = 0; i < N; ++i) {
@@ -189,8 +188,8 @@ public:
         }
 
         // алгоритм Брезенхема
-        const auto dx = static_cast<Position>(std::abs(x1 - x0));
-        const auto dy = static_cast<Position>(-std::abs(y1 - y0));
+        const auto dx = static_cast<Position>(abs(x1 - x0));
+        const auto dy = static_cast<Position>(-abs(y1 - y0));
         const auto sx = (x0 < x1) ? 1 : -1;
         const auto sy = (y0 < y1) ? 1 : -1;
 
@@ -303,43 +302,44 @@ public:
     }
 
     /// Рисует текст с использованием текущего шрифта.
+    /// @param text C-style string
+    /// @param on Цвет текста
     /// @details <code>'\\n'</code> для перехода на новую строку
     /// @details <code>'\\t'</code> для табуляции
     /// @details <code>'\\x80'</code> для нормального текста
     /// @details <code>'\\x81'</code> для инверсии текста
     /// @details <code>'\\x82'</code> для установки курсора по центру фрейма
-    void text(rs::str text) noexcept {
-
+    void text(rs::str text, bool on = true) noexcept {
         for (; *text != '\0'; text += 1) {
             if (*text == '\x80') {
-                text_value_on = true;
+                on = true;
                 continue;
             }
             if (*text == '\x81') {
-                text_value_on = false;
+                on = false;
                 continue;
             }
             if (*text == '\x82') {
                 const auto new_x = centerX();
-                clearLineSegment(new_x, text_value_on);
+                clearLineSegment(new_x, on);
                 cursor_x = new_x;
                 continue;
             }
             if (*text == '\n') {
-                clearLineSegment(maxX(), text_value_on);
+                clearLineSegment(maxX(), on);
                 nextLine();
                 continue;
             }
             if (*text == '\t') {
                 const auto tab_width = tabWidth();
                 const auto new_x = static_cast<Position>(((cursor_x / tab_width) + 1) * tab_width);
-                clearLineSegment(new_x, text_value_on);
+                clearLineSegment(new_x, on);
                 cursor_x = new_x;
                 continue;
             }
 
             if (cursor_x > maxGlyphX()) {
-                clearLineSegment(maxX(), text_value_on);
+                clearLineSegment(maxX(), on);
 
                 if (auto_next_line) {
                     nextLine();
@@ -348,11 +348,9 @@ public:
                 }
             }
 
-            if (cursor_y > maxGlyphY()) {
-                return;
-            }
+            if (cursor_y > maxGlyphY()) { return; }
 
-            drawGlyph(cursor_x, cursor_y, current_font->getGlyph(*text));
+            drawGlyph(cursor_x, cursor_y, current_font->getGlyph(*text), on);
 
             cursor_x = static_cast<Position>(cursor_x + current_font->glyph_width);
 
@@ -361,7 +359,7 @@ public:
                     cursor_x,
                     cursor_y,
                     static_cast<Position>(cursor_y + current_font->glyph_height),
-                    not text_value_on
+                    not on
                 );
             }
 
@@ -452,14 +450,14 @@ private:
     }
 
     /// Рисует глиф
-    void drawGlyph(Position x, Position y, const rs::u8 *glyph) noexcept {
+    void drawGlyph(Position x, Position y, const rs::u8 *glyph, bool on) noexcept {
         if (glyph == nullptr) {
             rect(
                 x,
                 y,
                 static_cast<Position>(x + current_font->glyph_width - 1),
                 static_cast<Position>(y + current_font->glyph_height - 1),
-                text_value_on ? Mode::FillBorder : Mode::ClearBorder
+                on ? Mode::FillBorder : Mode::ClearBorder
             );
             return;
         }
@@ -469,10 +467,10 @@ private:
 
             for (rs::u8 bit_index = 0; bit_index <= current_font->glyph_height; ++bit_index) {
                 const bool lit = glyph[col_index] & (1 << bit_index);
-                frame.setPixel(pixel_x, static_cast<Position>(y + bit_index), lit == text_value_on);
+                frame.setPixel(pixel_x, static_cast<Position>(y + bit_index), lit == on);
             }
         }
     }
 };
+}
 
-} // namespace kf

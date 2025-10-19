@@ -1,15 +1,16 @@
 #pragma once
 
-#include "Position.hpp"
-#include "BitMap.hpp"
-
-#include "rs/Result.hpp"
-#include "rs/aliases.hpp"
+#include <rs/Result.hpp>
+#include <rs/aliases.hpp>
 
 #include <algorithm>
 
+#include <kf/gfx/Position.hpp>
+#include <kf/gfx/BitMap.hpp>
+#include "Position.hpp"
 
-namespace kf {
+
+namespace kf::gfx {
 
 /// Представление прямоугольной области дисплея
 struct FrameView final {
@@ -29,7 +30,7 @@ public:
 private:
 
     /// Указатель на буфер дисплея
-    rs::u8 *buffer;
+    rs::u8 *buffer; // todo Проверка на null
 
     /// Шаг строки (ширина всего дисплея)
     Position stride;
@@ -46,7 +47,7 @@ public:
     Position height;
 
     /// Создает FrameView с проверкой ошибок
-    static rs::Result<FrameView, Error> create(
+    [[nodiscard]] static rs::Result<FrameView, Error> create(
         /// Буфер дисплея
         rs::u8 *buffer,
         /// Шаг строки (ширина дисплея)
@@ -101,13 +102,16 @@ public:
         height{height} {}
 
     /// Создает дочернюю область
-    rs::Result<FrameView, Error> sub(
+    [[nodiscard]] rs::Result<FrameView, Error> sub(
         /// Ширина дочерней области
         Position sub_width,
+
         /// Высота дочерней области
         Position sub_height,
+
         /// Смещение по X относительно родителя
         Position sub_offset_x,
+
         /// Смещение по Y относительно родителя
         Position sub_offset_y
     ) const noexcept {
@@ -162,7 +166,7 @@ public:
     }
 
     /// Возвращает состояние пикселя
-    inline bool getPixel(Position x, Position y) const noexcept {
+    [[nodiscard]] inline bool getPixel(Position x, Position y) const noexcept {
         if (x < 0 or x >= width or y < 0 or y >= height) { return false; }
         return buffer[getByteIndex(x, y)] & getBitMask(y);
     }
@@ -201,32 +205,32 @@ public:
 
 
     /// Преобразует X в абсолютную координату
-    inline Position toAbsoluteX(Position x) const noexcept {
+    [[nodiscard]] inline Position toAbsoluteX(Position x) const noexcept {
         return static_cast<Position>(offset_x + x);
     }
 
     /// Преобразует Y в абсолютную координату
-    inline Position toAbsoluteY(Position y) const noexcept {
+    [[nodiscard]] inline Position toAbsoluteY(Position y) const noexcept {
         return static_cast<Position>(offset_y + y);
     }
 
     /// Возвращает номер страницы для Y
-    inline Position getPage(Position y) const noexcept {
+    [[nodiscard]] inline Position getPage(Position y) const noexcept {
         return static_cast<Position>(toAbsoluteY(y) >> 3);
     }
 
     /// Возвращает битовую маску для Y
-    inline rs::u8 getBitMask(Position y) const noexcept {
+    [[nodiscard]] inline rs::u8 getBitMask(Position y) const noexcept {
         return static_cast<rs::u8>(1) << (toAbsoluteY(y) & 0x07);
     }
 
     /// Возвращает индекс байта в буфере
-    inline rs::size getByteIndex(Position x, Position y) const noexcept {
+    [[nodiscard]] inline rs::size getByteIndex(Position x, Position y) const noexcept {
         return getPage(y) * stride + toAbsoluteX(x);
     }
 
     /// Вычисляет маску видимости для страницы
-    inline rs::u8 calculatePageMask(Position page) const noexcept {
+    [[nodiscard]] inline rs::u8 calculatePageMask(Position page) const noexcept {
         const auto page_top = static_cast<Position>(page << 3);
         const auto page_bottom = static_cast<Position>(page_top + 7);
 
@@ -242,7 +246,7 @@ public:
     }
 
     /// Вычисляет маску видимости для битмапа
-    inline rs::u8 calculateBitmapMask(Position page_y) const noexcept {
+    [[nodiscard]] inline rs::u8 calculateBitmapMask(Position page_y) const noexcept {
         rs::u8 clip_top = 0;
         if (page_y < offset_y) {
             clip_top = static_cast<rs::u8>(offset_y - page_y);
@@ -321,5 +325,4 @@ public:
         return mask;
     }
 };
-
-} // namespace kfgfx
+}

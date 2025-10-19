@@ -1,11 +1,12 @@
 #pragma once
 
-#include "rs/aliases.hpp"
+#include <rs/aliases.hpp>
 
 
-namespace kf {
+namespace kf::gfx {
 
 /// Описывает позицию пикселях
 using Position = rs::i16;
 
 }
+
