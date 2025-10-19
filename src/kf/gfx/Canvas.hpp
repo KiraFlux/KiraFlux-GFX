@@ -16,8 +16,6 @@ struct Canvas {
 
 public:
 
-    explicit Canvas() noexcept = default;
-
     /// Режимы отрисовки фигур
     enum class Mode : rs::u8 {
         /// Заполнить
@@ -31,14 +29,14 @@ public:
     };
 
     /// Целевой кадр для рисования
-    FrameView frame{};
+    FrameView frame;
 
 private:
 
     /// Активный шрифт
     /// Всегда указывает на экземпляр шрифта
     /// Гарантированно не nullptr
-    const Font *current_font{};
+    const Font *current_font;
 
     /// Позиция курсора X
     Position cursor_x{0};
@@ -53,6 +51,9 @@ public:
 
     explicit Canvas(const FrameView &frame, const Font &font = Font::blank()) noexcept:
         frame{frame}, current_font{&font} {}
+
+    explicit Canvas() :
+        frame{}, current_font{&Font::blank()} {}
 
     /// Создать дочернюю область графического контекста
     rs::Result<Canvas, FrameView::Error> sub(
