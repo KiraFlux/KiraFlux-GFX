@@ -19,18 +19,23 @@ public:
 
     /// Возможные ошибки при создании FrameView
     enum class Error : rs::u8 {
+        /// Буфер не инициализирован
+        BufferNotInit,
+
         /// Размер области < 1
         SizeTooSmall,
+
         /// Дочерняя область > родительской
         SizeTooLarge,
+
         /// Смещение выходит за границы
-        OffsetOutOfBounds
+        OffsetOutOfBounds,
     };
 
 private:
 
     /// Указатель на буфер дисплея
-    rs::u8 *buffer; // todo Проверка на null
+    rs::u8 *buffer;
 
     /// Шаг строки (ширина всего дисплея)
     Position stride;
@@ -50,30 +55,40 @@ public:
     [[nodiscard]] static rs::Result<FrameView, Error> create(
         /// Буфер дисплея
         rs::u8 *buffer,
+
         /// Шаг строки (ширина дисплея)
         Position stride,
+
         /// Ширина области
         Position width,
+
         /// Высота области
         Position height,
+
         /// Смещение по X
         Position offset_x,
+
         /// Смещение по Y
         Position offset_y
     ) noexcept {
+        if (nullptr == buffer) {
+            return Error::BufferNotInit;
+        }
+
         if (width < 1 or height < 1) {
             return Error::SizeTooSmall;
         }
+
         return FrameView(buffer, stride, width, height, offset_x, offset_y);
     }
 
-    FrameView() noexcept = default;
+    FrameView() :
+        buffer{nullptr}, stride{0}, offset_x{0}, offset_y{0}, width{0}, height{0} {};
 
     /// Создать FrameView без проверок
     /// @warning unsafe
     explicit FrameView(
         /// Буфер дисплея
-        /// Должен быть валидным и иметь достаточный размер
         rs::u8 *buffer,
 
         /// Шаг строки (ширина дисплея)
@@ -159,16 +174,27 @@ public:
         };
     }
 
+    [[nodiscard]] bool isValid() const {
+        return nullptr != buffer or stride > 0 or width > 0 or height > 0;
+    }
+
+    [[nodiscard]] bool inside(Position x, Position y) const {
+        return x >= 0 and x < width and y >= 0 and y < height;
+    }
+
     /// Устанавливает состояние пикселя
     inline void setPixel(Position x, Position y, bool on) const noexcept {
-        if (x < 0 or x >= width or y < 0 or y >= height) { return; }
-        writePixel(x, y, on);
+        if (isValid() and inside(x, y)) {
+            writePixel(x, y, on);
+        }
     }
 
     /// Возвращает состояние пикселя
     [[nodiscard]] inline bool getPixel(Position x, Position y) const noexcept {
-        if (x < 0 or x >= width or y < 0 or y >= height) { return false; }
-        return buffer[getByteIndex(x, y)] & getBitMask(y);
+        if (isValid() and inside(x, y)) {
+            return buffer[getByteIndex(x, y)] & getBitMask(y);
+        }
+        return false;
     }
 
     /// Заливает область указанным значением
