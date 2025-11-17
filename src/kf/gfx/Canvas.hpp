@@ -1,139 +1,136 @@
 #pragma once
 
-#include <cmath>
 #include <array>
+#include <cmath>
+#include <kf/Result.hpp>
 
+#include <kf/gfx/BitMap.hpp>
 #include <kf/gfx/Font.hpp>
 #include <kf/gfx/FrameView.hpp>
-#include <kf/gfx/BitMap.hpp>
-#include <kf/gfx/Position.hpp>
-
 
 namespace kf::gfx {
 
-/// Инструменты для рисования графических примитивов
+/// @brief Инструменты для рисования графических примитивов
 struct Canvas {
 
-public:
+    /// @brief Режимы отрисовки фигур
+    enum class Mode : u8 {
 
-    /// Режимы отрисовки фигур
-    enum class Mode : rs::u8 {
-        /// Заполнить
+        /// @brief Заполнить
         Fill = 0b11,
-        /// Очистить
+
+        /// @brief Очистить
         Clear = 0b01,
-        /// Заполнить только границу
+
+        /// @brief Заполнить только границу
         FillBorder = 0b10,
-        /// Очистить только границу
+
+        /// @brief Очистить только границу
         ClearBorder = 0b00,
     };
 
-    /// Целевой кадр для рисования
+    /// @brief Целевой кадр для рисования
     FrameView frame;
 
 private:
-
-    /// Активный шрифт
-    /// Всегда указывает на экземпляр шрифта
-    /// Гарантированно не nullptr
+    /// @brief Активный шрифт
+    /// @brief Всегда указывает на экземпляр шрифта
+    /// @brief Гарантированно не nullptr
     const Font *current_font;
 
-    /// Позиция курсора X
-    Position cursor_x{0};
+    /// @brief Позиция курсора X
+    Pixel cursor_x{0};
 
-    /// Позиция курсора Y
-    Position cursor_y{0};
+    /// @brief Позиция курсора Y
+    Pixel cursor_y{0};
 
 public:
-
-    /// Автоматический перенос строки
+    /// @brief Автоматический перенос строки
     bool auto_next_line{false};
 
-    explicit Canvas(const FrameView &frame, const Font &font = Font::blank()) noexcept:
+    explicit Canvas(const FrameView &frame, const Font &font = Font::blank()) noexcept :
         frame{frame}, current_font{&font} {}
 
     explicit Canvas() :
         frame{}, current_font{&Font::blank()} {}
 
-    /// Создать дочернюю область графического контекста
-    rs::Result<Canvas, FrameView::Error> sub(
-        Position width,
-        Position height,
-        Position offset_x,
-        Position offset_y
-    ) {
+    /// @brief Создать дочернюю область графического контекста
+    kf::Result<Canvas, FrameView::Error> sub(
+        Pixel width,
+        Pixel height,
+        Pixel offset_x,
+        Pixel offset_y) {
         const auto frame_result = frame.sub(width, height, offset_x, offset_y);
 
-        if (frame_result.fail()) {
-            return {frame_result.error};
+        if (frame_result.isOk()) {
+            return {Canvas{frame_result.ok().value(), *current_font}};
+        } else {
+            return {frame_result.error().value()};
         }
-
-        return {Canvas{frame_result.value, *current_font}};
     }
 
-    /// Создать дочернюю область графического контекста без проверок
-    /// @warning unsafe
+    /// @brief Создать дочернюю область графического контекста без проверок
+    /// @brief @warning unsafe
     Canvas subUnchecked(
-        /// Ширина дочерней области.
-        /// sub_width не более parent.width()
-        Position width,
+        /// @brief Ширина дочерней области.
+        /// @details sub_width не более parent.width()
+        Pixel width,
 
-        /// Высота дочерней области.
-        /// sub_height не более parent.height()
-        Position height,
+        /// @brief Высота дочерней области.
+        /// @details sub_height не более parent.height()
+        Pixel height,
 
-        /// Смещение по X относительно родителя.
-        /// 0 .. (parent.width() - sub_width)
-        Position offset_x,
+        /// @brief Смещение по X относительно родителя.
+        /// @details 0 .. (parent.width() - sub_width)
+        Pixel offset_x,
 
-        /// Смещение по Y относительно родителя.
-        /// 0 .. (parent.height() - sub_height)
-        Position offset_y
-    ) {
+        /// @brief Смещение по Y относительно родителя.
+        /// @details 0 .. (parent.height() - sub_height)
+        Pixel offset_y) {
         return Canvas{frame.subUnchecked(width, height, offset_x, offset_y), *current_font};
     }
 
-    /// Установить шрифт
+    /// @brief Установить шрифт
     void setFont(const Font &font) { current_font = &font; }
 
     // Свойства
 
-    /// Ширина фрейма (Размер X)
-    [[nodiscard]] inline Position width() const noexcept { return frame.width; }
+    /// @brief Ширина фрейма (Размер X)
+    [[nodiscard]] inline Pixel width() const noexcept { return frame.width; }
 
-    /// Высота фрейма (Размер Y)
-    [[nodiscard]] inline Position height() const noexcept { return frame.height; }
+    /// @brief Высота фрейма (Размер Y)
+    [[nodiscard]] inline Pixel height() const noexcept { return frame.height; }
 
-    /// Максимальное значение X внутри фрейма
-    [[nodiscard]] inline Position maxX() const noexcept { return static_cast<Position>(width() - 1); }
+    /// @brief Максимальное значение X внутри фрейма
+    [[nodiscard]] inline Pixel maxX() const noexcept { return static_cast<Pixel>(width() - 1); }
 
-    /// Максимальное значение Y внутри фрейма
-    [[nodiscard]] inline Position maxY() const noexcept { return static_cast<Position>(height() - 1); }
+    /// @brief Максимальное значение Y внутри фрейма
+    [[nodiscard]] inline Pixel maxY() const noexcept { return static_cast<Pixel>(height() - 1); }
 
-    /// Центр фрейма X
-    [[nodiscard]] inline Position centerX() const noexcept { return static_cast<Position>(maxX() / 2); }
+    /// @brief Центр фрейма X
+    [[nodiscard]] inline Pixel centerX() const noexcept { return static_cast<Pixel>(maxX() / 2); }
 
-    /// Центр фрейма X
-    [[nodiscard]] inline Position centerY() const noexcept { return static_cast<Position>(maxY() / 2); }
+    /// @brief Центр фрейма X
+    [[nodiscard]] inline Pixel centerY() const noexcept { return static_cast<Pixel>(maxY() / 2); }
 
-    /// Максимальная позиция X для глифа активного шрифта
-    [[nodiscard]] inline Position maxGlyphX() const noexcept { return static_cast<Position>(width() - current_font->glyph_width); }
+    /// @brief Максимальная позиция X для глифа активного шрифта
+    [[nodiscard]] inline Pixel maxGlyphX() const noexcept { return static_cast<Pixel>(width() - current_font->glyph_width); }
 
-    /// Максимальная позиция Y для глифа активного шрифта
-    [[nodiscard]] inline Position maxGlyphY() const noexcept { return static_cast<Position>(height() - current_font->glyph_height); }
+    /// @brief Максимальная позиция Y для глифа активного шрифта
+    [[nodiscard]] inline Pixel maxGlyphY() const noexcept { return static_cast<Pixel>(height() - current_font->glyph_height); }
 
-    /// Ширина табуляции (Размер X)
-    [[nodiscard]] inline Position tabWidth() const noexcept { return static_cast<Position>(current_font->widthTotal() * 4); }
+    /// @brief Ширина табуляции (Размер X)
+    [[nodiscard]] inline Pixel tabWidth() const noexcept { return static_cast<Pixel>(current_font->widthTotal() * 4); }
 
     // Управление
 
-    /// Создаёт дочерние области с горизонтальным разделением
-    template<rs::size N> std::array<Canvas, N> splitHorizontally(std::array<rs::u8, N> weights) {
+    /// @brief Создаёт дочерние области с горизонтальным разделением
+    template<usize N> std::array<Canvas, N> splitHorizontally(std::array<u8, N> weights) {
         auto sizes = calculateSplitSizes<N>(width(), weights);
         std::array<Canvas, N> painters;
-        Position x = 0;
+        Pixel x = 0;
 
-        for (rs::size i = 0; i < N; ++i) {
+        for (usize i = 0; i < N; ++i) {
             painters[i] = subUnchecked(sizes[i], height(), x, 0);
             x += sizes[i];
         }
@@ -141,13 +138,13 @@ public:
         return painters;
     }
 
-    /// Создаёт дочерние области с вертикальным разделением
-    template<rs::size N> std::array<Canvas, N> splitVertically(std::array<rs::u8, N> weights) {
+    /// @brief Создаёт дочерние области с вертикальным разделением
+    template<usize N> std::array<Canvas, N> splitVertically(std::array<u8, N> weights) {
         auto sizes = calculateSplitSizes<N>(height(), weights);
         std::array<Canvas, N> painters;
-        Position y = 0;
+        Pixel y = 0;
 
-        for (rs::size i = 0; i < N; ++i) {
+        for (usize i = 0; i < N; ++i) {
             painters[i] = subUnchecked(width(), sizes[i], 0, y);
             y += sizes[i];
         }
@@ -157,23 +154,23 @@ public:
 
     // Графика
 
-    /// Заполняет весь фрейм
+    /// @brief Заполняет весь фрейм
     inline void fill(bool value) const noexcept {
         frame.fill(value);
     }
 
-    /// Рисует точку в указанных координатах
-    inline void dot(Position x, Position y, bool on = true) const noexcept {
+    /// @brief Рисует точку в указанных координатах
+    inline void dot(Pixel x, Pixel y, bool on = true) const noexcept {
         frame.setPixel(x, y, on);
     }
 
-    /// Рисует битмап в указанных координатах
-    template<Position W, Position H> inline void bitmap(Position x, Position y, const BitMap<W, H> &bm, bool on = true) noexcept {
+    /// @brief Рисует битмап в указанных координатах
+    template<Pixel W, Pixel H> inline void bitmap(Pixel x, Pixel y, const BitMap<W, H> &bm, bool on = true) noexcept {
         frame.drawBitmap(x, y, bm, on);
     }
 
-    /// Рисует линию
-    void line(Position x0, Position y0, Position x1, Position y1, bool on = true) const noexcept {
+    /// @brief Рисует линию
+    void line(Pixel x0, Pixel y0, Pixel x1, Pixel y1, bool on = true) const noexcept {
         if (x0 == x1) {
             if (y0 == y1) {
                 dot(x0, y0, on);
@@ -189,8 +186,8 @@ public:
         }
 
         // алгоритм Брезенхема
-        const auto dx = static_cast<Position>(abs(x1 - x0));
-        const auto dy = static_cast<Position>(-abs(y1 - y0));
+        const auto dx = static_cast<Pixel>(abs(x1 - x0));
+        const auto dy = static_cast<Pixel>(-abs(y1 - y0));
         const auto sx = (x0 < x1) ? 1 : -1;
         const auto sy = (y0 < y1) ? 1 : -1;
 
@@ -204,18 +201,18 @@ public:
             if (double_error >= dy) {
                 if (x0 == x1) { break; }
                 error += dy;
-                x0 = static_cast<Position>(x0 + sx);
+                x0 = static_cast<Pixel>(x0 + sx);
             }
             if (double_error <= dx) {
                 if (y0 == y1) { break; }
                 error += dx;
-                y0 = static_cast<Position>(y0 + sy);
+                y0 = static_cast<Pixel>(y0 + sy);
             }
         }
     }
 
-    /// Рисует прямоугольник с указанным режимом
-    void rect(Position x0, Position y0, Position x1, Position y1, Mode mode) noexcept {
+    /// @brief Рисует прямоугольник с указанным режимом
+    void rect(Pixel x0, Pixel y0, Pixel x1, Pixel y1, Mode mode) noexcept {
         // Нормализация координат
         if (x0 > x1) { std::swap(x0, x1); }
         if (y0 > y1) { std::swap(y0, y1); }
@@ -224,32 +221,32 @@ public:
 
         if (isFillMode(mode)) {
             // Оптимизированная заливка через subview
-            const auto width = static_cast<Position>(x1 - x0 + 1);
-            const auto height = static_cast<Position>(y1 - y0 + 1);
+            const auto width = static_cast<Pixel>(x1 - x0 + 1);
+            const auto height = static_cast<Pixel>(y1 - y0 + 1);
             frame.subUnchecked(width, height, x0, y0).fill(value);
         } else {
             // Рисование границ без дублирования углов
-            drawLineHorizontal(x0, y0, x1, value);  // Верхняя сторона
-            drawLineHorizontal(x0, y1, x1, value);  // Нижняя сторона
+            drawLineHorizontal(x0, y0, x1, value);// Верхняя сторона
+            drawLineHorizontal(x0, y1, x1, value);// Нижняя сторона
 
             // Боковые стороны (исключая углы)
-            for (auto y = static_cast<Position>(y0 + 1); y < y1; y++) {
+            for (auto y = static_cast<Pixel>(y0 + 1); y < y1; y++) {
                 frame.setPixel(x0, y, value);
                 frame.setPixel(x1, y, value);
             }
         }
     }
 
-    /// Рисует окружность с указанным режимом
-    void circle(Position center_x, Position center_y, Position r, Mode mode) noexcept {
+    /// @brief Рисует окружность с указанным режимом
+    void circle(Pixel center_x, Pixel center_y, Pixel r, Mode mode) noexcept {
         const bool value = getModeValue(mode);
 
-        Position x = r;
-        Position y = 0;
+        Pixel x = r;
+        Pixel y = 0;
         auto err = 0;
 
         while (x >= y) {
-            const Position last_y = y;
+            const Pixel last_y = y;
             y++;
             err += 2 * y + 1;
 
@@ -259,32 +256,28 @@ public:
             }
 
             if (isFillMode(mode)) {
-                const Position start_x = (x == last_y) ? last_y : x;
+                const Pixel start_x = (x == last_y) ? last_y : x;
 
                 drawLineHorizontal(
-                    static_cast<Position>(center_x - start_x),
-                    static_cast<Position>(center_y + last_y),
-                    static_cast<Position>(center_x + start_x),
-                    value
-                );
+                    static_cast<Pixel>(center_x - start_x),
+                    static_cast<Pixel>(center_y + last_y),
+                    static_cast<Pixel>(center_x + start_x),
+                    value);
                 drawLineHorizontal(
-                    static_cast<Position>(center_x - start_x),
-                    static_cast<Position>(center_y - last_y),
-                    static_cast<Position>(center_x + start_x),
-                    value
-                );
+                    static_cast<Pixel>(center_x - start_x),
+                    static_cast<Pixel>(center_y - last_y),
+                    static_cast<Pixel>(center_x + start_x),
+                    value);
                 drawLineHorizontal(
-                    static_cast<Position>(center_x - last_y),
-                    static_cast<Position>(center_y + x),
-                    static_cast<Position>(center_x + last_y),
-                    value
-                );
+                    static_cast<Pixel>(center_x - last_y),
+                    static_cast<Pixel>(center_y + x),
+                    static_cast<Pixel>(center_x + last_y),
+                    value);
                 drawLineHorizontal(
-                    static_cast<Position>(center_x - last_y),
-                    static_cast<Position>(center_y - x),
-                    static_cast<Position>(center_x + last_y),
-                    value
-                );
+                    static_cast<Pixel>(center_x - last_y),
+                    static_cast<Pixel>(center_y - x),
+                    static_cast<Pixel>(center_x + last_y),
+                    value);
             } else {
                 drawCirclePoints(center_x, center_y, x, y, value);
 
@@ -296,13 +289,13 @@ public:
         }
     }
 
-    /// Установить позицию курсора
-    void setCursor(Position x, Position y) noexcept {
+    /// @brief Установить позицию курсора
+    void setCursor(Pixel x, Pixel y) noexcept {
         cursor_x = x;
         cursor_y = y;
     }
 
-    /// Рисует текст с использованием текущего шрифта.
+    /// @brief Рисует текст с использованием текущего шрифта.
     /// @param text C-style string
     /// @param on Цвет текста
     /// @details <code>'\\n'</code> для перехода на новую строку
@@ -310,7 +303,7 @@ public:
     /// @details <code>'\\x80'</code> для нормального текста
     /// @details <code>'\\x81'</code> для инверсии текста
     /// @details <code>'\\x82'</code> для установки курсора по центру фрейма
-    void text(rs::str text, bool on = true) noexcept {
+    void text(const char *text, bool on = true) noexcept {
         for (; *text != '\0'; text += 1) {
             if (*text == '\x80') {
                 on = true;
@@ -333,7 +326,7 @@ public:
             }
             if (*text == '\t') {
                 const auto tab_width = tabWidth();
-                const auto new_x = static_cast<Position>(((cursor_x / tab_width) + 1) * tab_width);
+                const auto new_x = static_cast<Pixel>(((cursor_x / tab_width) + 1) * tab_width);
                 clearLineSegment(new_x, on);
                 cursor_x = new_x;
                 continue;
@@ -353,41 +346,39 @@ public:
 
             drawGlyph(cursor_x, cursor_y, current_font->getGlyph(*text), on);
 
-            cursor_x = static_cast<Position>(cursor_x + current_font->glyph_width);
+            cursor_x = static_cast<Pixel>(cursor_x + current_font->glyph_width);
 
             if (cursor_x < width()) {
                 drawLineVertical(
                     cursor_x,
                     cursor_y,
-                    static_cast<Position>(cursor_y + current_font->glyph_height),
-                    not on
-                );
+                    static_cast<Pixel>(cursor_y + current_font->glyph_height),
+                    not on);
             }
 
-            cursor_x = static_cast<Position>(cursor_x + 1);
+            cursor_x = static_cast<Pixel>(cursor_x + 1);
         }
     }
 
 private:
-
-    /// Рассчитывает размеры областей для разделения
-    template<rs::size N> std::array<Position, N> calculateSplitSizes(Position total_size, std::array<rs::u8, N> weights) {
+    /// @brief Рассчитывает размеры областей для разделения
+    template<usize N> std::array<Pixel, N> calculateSplitSizes(Pixel total_size, std::array<u8, N> weights) {
         for (auto &w: weights) {
             if (w <= 0) { w = 1; }
         }
 
-        Position total_weight = 0;
+        Pixel total_weight = 0;
         for (auto w: weights) { total_weight += w; }
 
-        std::array<Position, N> sizes;
-        Position remaining = total_size;
+        std::array<Pixel, N> sizes;
+        Pixel remaining = total_size;
 
-        for (rs::size i = 0; i < N; ++i) {
+        for (usize i = 0; i < N; ++i) {
             sizes[i] = (total_size * weights[i]) / total_weight;
             remaining -= sizes[i];
         }
 
-        for (rs::size i = 0; remaining > 0; i = (i + 1) % N) {
+        for (usize i = 0; remaining > 0; i = (i + 1) % N) {
             sizes[i] += 1;
             remaining -= 1;
         }
@@ -395,83 +386,80 @@ private:
         return sizes;
     }
 
-    /// Очистить сегмент строки от курсора
-    void clearLineSegment(Position x, bool on) noexcept {
+    /// @brief Очистить сегмент строки от курсора
+    void clearLineSegment(Pixel x, bool on) noexcept {
         rect(
             cursor_x,
             cursor_y,
             x,
-            static_cast<Position>(cursor_y + current_font->glyph_height),
-            on ? Mode::Clear : Mode::Fill
-        );
+            static_cast<Pixel>(cursor_y + current_font->glyph_height),
+            on ? Mode::Clear : Mode::Fill);
     }
 
-    /// Перенести курсор на следующую строку
+    /// @brief Перенести курсор на следующую строку
     void nextLine() noexcept {
         cursor_x = 0;
-        cursor_y = static_cast<Position>(cursor_y + current_font->heightTotal());
+        cursor_y = static_cast<Pixel>(cursor_y + current_font->heightTotal());
     }
 
-    /// Получить значение режима
+    /// @brief Получить значение режима
     static inline bool getModeValue(Mode mode) noexcept {
-        return static_cast<rs::u8>(mode) & 0b10;
+        return static_cast<u8>(mode) & 0b10;
     }
 
-    /// Режим является заполняющим
+    /// @brief Режим является заполняющим
     static inline bool isFillMode(Mode mode) noexcept {
-        return static_cast<rs::u8>(mode) & 0b01;
+        return static_cast<u8>(mode) & 0b01;
     }
 
-    /// Рисует горизонтальную линию
-    void drawLineHorizontal(Position x0, Position y, Position x1, bool on) const noexcept {
+    /// @brief Рисует горизонтальную линию
+    void drawLineHorizontal(Pixel x0, Pixel y, Pixel x1, bool on) const noexcept {
         if (x0 > x1) { std::swap(x0, x1); }
-        for (Position x = x0; x <= x1; x++) {
+        for (Pixel x = x0; x <= x1; x++) {
             frame.setPixel(x, y, on);
         }
     }
 
-    /// Рисует вертикальную линию
-    void drawLineVertical(Position x, Position y0, Position y1, bool on) const noexcept {
+    /// @brief Рисует вертикальную линию
+    void drawLineVertical(Pixel x, Pixel y0, Pixel y1, bool on) const noexcept {
         if (y0 > y1) { std::swap(y0, y1); }
-        for (Position y = y0; y <= y1; y++) {
+        for (Pixel y = y0; y <= y1; y++) {
             frame.setPixel(x, y, on);
         }
     }
 
-    /// Рисует 8 симметричных точек окружности
-    void drawCirclePoints(Position cx, Position cy, Position dx, Position dy, bool value) const noexcept {
-        frame.setPixel(static_cast<Position>(cx + dx), static_cast<Position>(cy + dy), value);
-        frame.setPixel(static_cast<Position>(cx + dy), static_cast<Position>(cy + dx), value);
-        frame.setPixel(static_cast<Position>(cx - dy), static_cast<Position>(cy + dx), value);
-        frame.setPixel(static_cast<Position>(cx - dx), static_cast<Position>(cy + dy), value);
-        frame.setPixel(static_cast<Position>(cx - dx), static_cast<Position>(cy - dy), value);
-        frame.setPixel(static_cast<Position>(cx - dy), static_cast<Position>(cy - dx), value);
-        frame.setPixel(static_cast<Position>(cx + dy), static_cast<Position>(cy - dx), value);
-        frame.setPixel(static_cast<Position>(cx + dx), static_cast<Position>(cy - dy), value);
+    /// @brief Рисует 8 симметричных точек окружности
+    void drawCirclePoints(Pixel cx, Pixel cy, Pixel dx, Pixel dy, bool value) const noexcept {
+        frame.setPixel(static_cast<Pixel>(cx + dx), static_cast<Pixel>(cy + dy), value);
+        frame.setPixel(static_cast<Pixel>(cx + dy), static_cast<Pixel>(cy + dx), value);
+        frame.setPixel(static_cast<Pixel>(cx - dy), static_cast<Pixel>(cy + dx), value);
+        frame.setPixel(static_cast<Pixel>(cx - dx), static_cast<Pixel>(cy + dy), value);
+        frame.setPixel(static_cast<Pixel>(cx - dx), static_cast<Pixel>(cy - dy), value);
+        frame.setPixel(static_cast<Pixel>(cx - dy), static_cast<Pixel>(cy - dx), value);
+        frame.setPixel(static_cast<Pixel>(cx + dy), static_cast<Pixel>(cy - dx), value);
+        frame.setPixel(static_cast<Pixel>(cx + dx), static_cast<Pixel>(cy - dy), value);
     }
 
-    /// Рисует глиф
-    void drawGlyph(Position x, Position y, const rs::u8 *glyph, bool on) noexcept {
+    /// @brief Рисует глиф
+    void drawGlyph(Pixel x, Pixel y, const u8 *glyph, bool on) noexcept {
         if (glyph == nullptr) {
             rect(
                 x,
                 y,
-                static_cast<Position>(x + current_font->glyph_width - 1),
-                static_cast<Position>(y + current_font->glyph_height - 1),
-                on ? Mode::FillBorder : Mode::ClearBorder
-            );
+                static_cast<Pixel>(x + current_font->glyph_width - 1),
+                static_cast<Pixel>(y + current_font->glyph_height - 1),
+                on ? Mode::FillBorder : Mode::ClearBorder);
             return;
         }
 
-        for (rs::u8 col_index = 0; col_index < current_font->glyph_width; ++col_index) {
-            const auto pixel_x = static_cast<Position>(x + col_index);
+        for (u8 col_index = 0; col_index < current_font->glyph_width; ++col_index) {
+            const auto pixel_x = static_cast<Pixel>(x + col_index);
 
-            for (rs::u8 bit_index = 0; bit_index <= current_font->glyph_height; ++bit_index) {
+            for (u8 bit_index = 0; bit_index <= current_font->glyph_height; ++bit_index) {
                 const bool lit = glyph[col_index] & (1 << bit_index);
-                frame.setPixel(pixel_x, static_cast<Position>(y + bit_index), lit == on);
+                frame.setPixel(pixel_x, static_cast<Pixel>(y + bit_index), lit == on);
             }
         }
     }
 };
-}
-
+}// namespace kf::gfx

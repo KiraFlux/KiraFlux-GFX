@@ -1,27 +1,28 @@
 #pragma once
 
-#include <rs/aliases.hpp>
-
-#include <kf/gfx/Position.hpp>
-
+#include <kf/units.hpp>
 
 namespace kf::gfx {
-/// Представляет моноширинный шрифт с высотой глифов до 8 пикселей
+
+/// @brief Представляет моноширинный шрифт с высотой глифов до 8 пикселей
 struct Font final {
 
-    /// Код первого символа в шрифте
+    /// @brief Код первого символа в шрифте
     static constexpr char start_char = 32;
-    /// Код последнего символа в шрифте
+
+    /// @brief Код последнего символа в шрифте
     static constexpr char end_char = 127;
 
-    /// Данные шрифта (массив глифов)
-    const rs::u8 *data;
-    /// Ширина одного глифа в пикселях
-    const rs::u8 glyph_width;
-    /// Высота глифа в пикселях (1-8)
-    const rs::u8 glyph_height;
+    /// @brief Данные шрифта (массив глифов)
+    const u8 *data;
 
-    /// Получить экземпляр пустого шрифта
+    /// @brief Ширина одного глифа в пикселях
+    const u8 glyph_width;
+
+    /// @brief Высота глифа в пикселях (1-8)
+    const u8 glyph_height;
+
+    /// @brief Получить экземпляр пустого шрифта
     static const Font &blank() {
         static Font instance{
             nullptr,
@@ -31,17 +32,20 @@ struct Font final {
         return instance;
     }
 
-    /// Полная ширина глифа
-    [[nodiscard]] inline rs::u8 widthTotal() const noexcept { return glyph_width + 1; }
+    /// @brief Полная ширина глифа
+    [[nodiscard]] inline u8 widthTotal() const noexcept { return glyph_width + 1; }
 
-    /// Полная высота глифа
-    [[nodiscard]] inline rs::u8 heightTotal() const noexcept { return glyph_height + 1; }
+    /// @brief Полная высота глифа
+    [[nodiscard]] inline u8 heightTotal() const noexcept { return glyph_height + 1; }
 
-    /// Получить указатель на данные глифа для символа
+    /// @brief Получить указатель на данные глифа для символа
     /// @returns nullptr если символ вне диапазона
-    [[nodiscard]] const rs::u8 *getGlyph(char c) const noexcept {
-        if (data == nullptr or c < start_char or c > end_char) { return nullptr; }
-        return data + (static_cast<rs::size>(c - start_char) * glyph_width);
+    [[nodiscard]] const u8 *getGlyph(char c) const noexcept {
+        if (nullptr == data or c < start_char or c > end_char) {
+            return nullptr;
+        }
+
+        return data + (static_cast<usize>(c - start_char) * glyph_width);
     }
 };
 
@@ -51,8 +55,8 @@ namespace fonts {
 /// GyverOLED EN Font
 extern const Font gyver_5x7_en;
 
-}
-}
+}// namespace fonts
+}// namespace kf::gfx
 
 // namespace fonts
 

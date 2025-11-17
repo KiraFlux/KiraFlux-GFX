@@ -1,24 +1,25 @@
 #pragma once
 
-#include <kf/gfx/Position.hpp>
-#include "Position.hpp"
-
+#include <kf/units.hpp>
 
 namespace kf::gfx {
 
-/// БитМап изображение
-template<Position W, Position H> struct BitMap final {
-    /// Ширина в пикселях
-    static constexpr auto width = W;
-    /// Высота в пикселях
-    static constexpr auto height = H;
-    /// Количество страниц
-    static constexpr auto pages_count = (height + 7) / 8;
+/// @brief БитМап изображение
+template<Pixel W, Pixel H> struct BitMap final {
 
-    /// Буфер
-    const rs::u8 buffer[width * pages_count];
+    /// @brief Ширина в пикселях
+    static constexpr auto width = W;
+
+    /// @brief Высота в пикселях
+    static constexpr auto height = H;
+
+    /// @brief Количество страниц
+    static constexpr auto pages = (height + 7) / 8;
+
+    /// @brief Буфер
+    const u8 buffer[width * pages];
 
     BitMap() = delete;
 };
 
-}
+}// namespace kf::gfx

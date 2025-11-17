@@ -1,76 +1,72 @@
 #pragma once
 
-#include <rs/Result.hpp>
-#include <rs/aliases.hpp>
-
 #include <algorithm>
+#include <kf/Result.hpp>
+#include <kf/units.hpp>
 
-#include <kf/gfx/Position.hpp>
 #include <kf/gfx/BitMap.hpp>
-#include "Position.hpp"
-
 
 namespace kf::gfx {
 
-/// Представление прямоугольной области дисплея
+/// @brief Представление прямоугольной области дисплея
 struct FrameView final {
 
 public:
+    /// @brief Возможные ошибки при создании FrameView
+    enum class Error : u8 {
 
-    /// Возможные ошибки при создании FrameView
-    enum class Error : rs::u8 {
-        /// Буфер не инициализирован
+        /// @brief Буфер не инициализирован
         BufferNotInit,
 
-        /// Размер области < 1
+        /// @brief Размер области < 1
         SizeTooSmall,
 
-        /// Дочерняя область > родительской
+        /// @brief Дочерняя область > родительской
         SizeTooLarge,
 
-        /// Смещение выходит за границы
+        /// @brief Смещение выходит за границы
         OffsetOutOfBounds,
     };
 
 private:
+    /// @brief Указатель на буфер дисплея
+    u8 *buffer;
 
-    /// Указатель на буфер дисплея
-    rs::u8 *buffer;
-
-    /// Шаг строки (ширина всего дисплея)
-    Position stride;
+    /// @brief Шаг строки (ширина всего дисплея)
+    Pixel stride;
 
 public:
+    /// @brief Абсолютное смещение по X
+    Pixel offset_x;
 
-    /// Абсолютное смещение по X
-    Position offset_x;
-    /// Абсолютное смещение по Y
-    Position offset_y;
-    /// Ширина области
-    Position width;
-    /// Высота области
-    Position height;
+    /// @brief Абсолютное смещение по Y
+    Pixel offset_y;
 
-    /// Создает FrameView с проверкой ошибок
-    [[nodiscard]] static rs::Result<FrameView, Error> create(
-        /// Буфер дисплея
-        rs::u8 *buffer,
+    /// @brief Ширина области
+    Pixel width;
 
-        /// Шаг строки (ширина дисплея)
-        Position stride,
+    /// @brief Высота области
+    Pixel height;
 
-        /// Ширина области
-        Position width,
+    /// @brief Создает FrameView с проверкой ошибок
+    [[nodiscard]] static Result<FrameView, Error> create(
+        /// @brief Буфер дисплея
+        u8 *buffer,
 
-        /// Высота области
-        Position height,
+        /// @brief Шаг строки (ширина дисплея)
+        Pixel stride,
 
-        /// Смещение по X
-        Position offset_x,
+        /// @brief Ширина области
+        Pixel width,
 
-        /// Смещение по Y
-        Position offset_y
-    ) noexcept {
+        /// @brief Высота области
+        Pixel height,
+
+        /// @brief Смещение по X
+        Pixel offset_x,
+
+        /// @brief Смещение по Y
+        Pixel offset_y) noexcept {
         if (nullptr == buffer) {
             return Error::BufferNotInit;
         }
@@ -85,30 +81,29 @@ public:
     FrameView() :
         buffer{nullptr}, stride{0}, offset_x{0}, offset_y{0}, width{0}, height{0} {};
 
-    /// Создать FrameView без проверок
+    /// @brief Создать FrameView без проверок
     /// @warning unsafe
     explicit FrameView(
-        /// Буфер дисплея
-        rs::u8 *buffer,
+        /// @brief Буфер дисплея
+        u8 *buffer,
 
-        /// Шаг строки (ширина дисплея)
-        /// > 1
-        Position stride,
+        /// @brief Шаг строки (ширина дисплея)
+        /// @details > 1
+        Pixel stride,
 
-        /// Ширина области
-        /// > 1
-        Position width,
+        /// @brief Ширина области
+        /// @details > 1
+        Pixel width,
 
-        /// Высота области
-        /// > 1
-        Position height,
+        /// @brief Высота области
+        /// @details > 1
+        Pixel height,
 
-        /// Смещение X
-        Position offset_x,
+        /// @brief Смещение X
+        Pixel offset_x,
 
-        /// Смещение Y
-        Position offset_y
-    ) noexcept:
+        /// @brief Смещение Y
+        Pixel offset_y) noexcept :
         buffer{buffer},
         stride{stride},
         offset_x{offset_x},
@@ -116,20 +111,19 @@ public:
         width{width},
         height{height} {}
 
-    /// Создает дочернюю область
-    [[nodiscard]] rs::Result<FrameView, Error> sub(
-        /// Ширина дочерней области
-        Position sub_width,
+    /// @brief Создает дочернюю область
+    [[nodiscard]] Result<FrameView, Error> sub(
+        /// @brief Ширина дочерней области
+        Pixel sub_width,
 
-        /// Высота дочерней области
-        Position sub_height,
+        /// @brief Высота дочерней области
+        Pixel sub_height,
 
-        /// Смещение по X относительно родителя
-        Position sub_offset_x,
+        /// @brief Смещение по X относительно родителя
+        Pixel sub_offset_x,
 
-        /// Смещение по Y относительно родителя
-        Position sub_offset_y
-    ) const noexcept {
+        /// @brief Смещение по Y относительно родителя
+        Pixel sub_offset_y) const noexcept {
         // Проверка выхода за границы родителя
         if (sub_offset_x >= width or sub_offset_y >= height) {
             return Error::OffsetOutOfBounds;
@@ -139,180 +133,175 @@ public:
             return Error::SizeTooLarge;
         }
 
-        const auto new_x = static_cast<Position>(offset_x + sub_offset_x);
-        const auto new_y = static_cast<Position>(offset_y + sub_offset_y);
+        const auto new_x = static_cast<Pixel>(offset_x + sub_offset_x);
+        const auto new_y = static_cast<Pixel>(offset_y + sub_offset_y);
 
         return create(buffer, stride, sub_width, sub_height, new_x, new_y);
     }
 
-    /// Создает дочернюю область без проверок
+    /// @brief Создает дочернюю область без проверок
     /// @warning unsafe
     FrameView subUnchecked(
-        /// Ширина дочерней области.
-        /// sub_width не более parent.width
-        Position sub_width,
+        /// @brief Ширина дочерней области.
+        /// @brief sub_width не более parent.width
+        Pixel sub_width,
 
-        /// Высота дочерней области.
-        /// sub_height не более parent.height
-        Position sub_height,
+        /// @brief Высота дочерней области.
+        /// @brief sub_height не более parent.height
+        Pixel sub_height,
 
-        /// Смещение по X относительно родителя.
-        /// 0 .. (parent.width - sub_width)
-        Position sub_offset_x,
+        /// @brief Смещение по X относительно родителя.
+        /// @brief 0 .. (parent.width - sub_width)
+        Pixel sub_offset_x,
 
-        /// Смещение по Y относительно родителя.
-        /// 0 .. (parent.height - sub_height)
-        Position sub_offset_y
-    ) {
+        /// @brief Смещение по Y относительно родителя.
+        /// @brief 0 .. (parent.height - sub_height)
+        Pixel sub_offset_y) {
         return FrameView{
             buffer,
             stride,
             sub_width,
             sub_height,
-            static_cast<Position>(offset_x + sub_offset_x),
-            static_cast<Position>(offset_y + sub_offset_y)
-        };
+            static_cast<Pixel>(offset_x + sub_offset_x),
+            static_cast<Pixel>(offset_y + sub_offset_y)};
     }
 
     [[nodiscard]] bool isValid() const {
         return nullptr != buffer or stride > 0 or width > 0 or height > 0;
     }
 
-    [[nodiscard]] bool inside(Position x, Position y) const {
+    [[nodiscard]] bool inside(Pixel x, Pixel y) const {
         return x >= 0 and x < width and y >= 0 and y < height;
     }
 
-    /// Устанавливает состояние пикселя
-    inline void setPixel(Position x, Position y, bool on) const noexcept {
+    /// @brief Устанавливает состояние пикселя
+    inline void setPixel(Pixel x, Pixel y, bool on) const noexcept {
         if (isValid() and inside(x, y)) {
             writePixel(x, y, on);
         }
     }
 
-    /// Возвращает состояние пикселя
-    [[nodiscard]] inline bool getPixel(Position x, Position y) const noexcept {
+    /// @brief Возвращает состояние пикселя
+    [[nodiscard]] inline bool getPixel(Pixel x, Pixel y) const noexcept {
         if (isValid() and inside(x, y)) {
             return buffer[getByteIndex(x, y)] & getBitMask(y);
         }
         return false;
     }
 
-    /// Заливает область указанным значением
+    /// @brief Заливает область указанным значением
     void fill(bool value) const noexcept {
-        const auto start_page = static_cast<Position>((offset_y) >> 3);
-        const auto end_page = static_cast<Position>((offset_y + height + 6) >> 3);
+        const auto start_page = static_cast<Pixel>((offset_y) >> 3);
+        const auto end_page = static_cast<Pixel>((offset_y + height + 6) >> 3);
 
-        for (Position page = start_page; page <= end_page; ++page) {
-            const rs::u8 mask = calculatePageMask(page);
+        for (Pixel page = start_page; page <= end_page; ++page) {
+            const u8 mask = calculatePageMask(page);
             if (mask == 0) { continue; }
 
-            for (Position x = 0; x < width; ++x) {
-                const Position abs_x = toAbsoluteX(x);
+            for (Pixel x = 0; x < width; ++x) {
+                const Pixel abs_x = toAbsoluteX(x);
                 if (abs_x < 0 or abs_x >= stride) { continue; }
                 writeData(abs_x, page, mask, value);
             }
         }
     }
 
-    /// Рисует битмап в указанной позиции
-    template<Position W, Position H> void drawBitmap(Position x, Position y, const BitMap<W, H> &bitmap, bool on = true) noexcept {
-        for (Position page_idx = 0; page_idx < BitMap<W, H>::pages_count; ++page_idx) {
-            const auto page_y = static_cast<Position>(toAbsoluteY(y) + (page_idx << 3));
+    /// @brief Рисует битмап в указанной позиции
+    template<Pixel W, Pixel H> void drawBitmap(Pixel x, Pixel y, const BitMap<W, H> &bitmap, bool on = true) noexcept {
+        for (Pixel page_idx = 0; page_idx < BitMap<W, H>::pages; ++page_idx) {
+            const auto page_y = static_cast<Pixel>(toAbsoluteY(y) + (page_idx << 3));
 
             // Пропуск невидимых страниц
             if (page_y + 7 < offset_y or page_y >= offset_y + height) { continue; }
 
-            const rs::u8 mask = calculateBitmapMask(page_y);
+            const u8 mask = calculateBitmapMask(page_y);
             if (mask == 0) { continue; }
 
             drawBitmapRow(bitmap, page_idx, x, page_y, mask, on);
         }
     }
 
-
-    /// Преобразует X в абсолютную координату
-    [[nodiscard]] inline Position toAbsoluteX(Position x) const noexcept {
-        return static_cast<Position>(offset_x + x);
+    /// @brief Преобразует X в абсолютную координату
+    [[nodiscard]] inline Pixel toAbsoluteX(Pixel x) const noexcept {
+        return static_cast<Pixel>(offset_x + x);
     }
 
-    /// Преобразует Y в абсолютную координату
-    [[nodiscard]] inline Position toAbsoluteY(Position y) const noexcept {
-        return static_cast<Position>(offset_y + y);
+    /// @brief Преобразует Y в абсолютную координату
+    [[nodiscard]] inline Pixel toAbsoluteY(Pixel y) const noexcept {
+        return static_cast<Pixel>(offset_y + y);
     }
 
-    /// Возвращает номер страницы для Y
-    [[nodiscard]] inline Position getPage(Position y) const noexcept {
-        return static_cast<Position>(toAbsoluteY(y) >> 3);
+    /// @brief Возвращает номер страницы для Y
+    [[nodiscard]] inline Pixel getPage(Pixel y) const noexcept {
+        return static_cast<Pixel>(toAbsoluteY(y) >> 3);
     }
 
-    /// Возвращает битовую маску для Y
-    [[nodiscard]] inline rs::u8 getBitMask(Position y) const noexcept {
-        return static_cast<rs::u8>(1) << (toAbsoluteY(y) & 0x07);
+    /// @brief Возвращает битовую маску для Y
+    [[nodiscard]] inline u8 getBitMask(Pixel y) const noexcept {
+        return static_cast<u8>(1) << (toAbsoluteY(y) & 0x07);
     }
 
-    /// Возвращает индекс байта в буфере
-    [[nodiscard]] inline rs::size getByteIndex(Position x, Position y) const noexcept {
+    /// @brief Возвращает индекс байта в буфере
+    [[nodiscard]] inline usize getByteIndex(Pixel x, Pixel y) const noexcept {
         return getPage(y) * stride + toAbsoluteX(x);
     }
 
-    /// Вычисляет маску видимости для страницы
-    [[nodiscard]] inline rs::u8 calculatePageMask(Position page) const noexcept {
-        const auto page_top = static_cast<Position>(page << 3);
-        const auto page_bottom = static_cast<Position>(page_top + 7);
+    /// @brief Вычисляет маску видимости для страницы
+    [[nodiscard]] inline u8 calculatePageMask(Pixel page) const noexcept {
+        const auto page_top = static_cast<Pixel>(page << 3);
+        const auto page_bottom = static_cast<Pixel>(page_top + 7);
 
-        const Position visible_top = std::max(offset_y, page_top);
-        const auto visible_bottom = static_cast<Position>(std::min(offset_y + height, page_bottom + 1));
+        const Pixel visible_top = std::max(offset_y, page_top);
+        const auto visible_bottom = static_cast<Pixel>(std::min(offset_y + height, page_bottom + 1));
 
         if (visible_top >= visible_bottom) { return 0; }
 
         return createPageMask(
-            static_cast<rs::u8>(visible_top - page_top),
-            static_cast<rs::u8>(visible_bottom - page_top - 1)
-        );
+            static_cast<u8>(visible_top - page_top),
+            static_cast<u8>(visible_bottom - page_top - 1));
     }
 
-    /// Вычисляет маску видимости для битмапа
-    [[nodiscard]] inline rs::u8 calculateBitmapMask(Position page_y) const noexcept {
-        rs::u8 clip_top = 0;
+    /// @brief Вычисляет маску видимости для битмапа
+    [[nodiscard]] inline u8 calculateBitmapMask(Pixel page_y) const noexcept {
+        u8 clip_top = 0;
         if (page_y < offset_y) {
-            clip_top = static_cast<rs::u8>(offset_y - page_y);
+            clip_top = static_cast<u8>(offset_y - page_y);
         }
 
-        rs::u8 clip_bottom = 7;
+        u8 clip_bottom = 7;
         if (page_y + 7 >= offset_y + height) {
-            clip_bottom = static_cast<rs::u8>(offset_y + height - page_y - 1);
+            clip_bottom = static_cast<u8>(offset_y + height - page_y - 1);
         }
 
         return createPageMask(clip_top, clip_bottom);
     }
 
-    /// Рисует строку битмапа
-    template<Position W, Position H> inline void drawBitmapRow(
+    /// @brief Рисует строку битмапа
+    template<Pixel W, Pixel H> inline void drawBitmapRow(
         const BitMap<W, H> &bitmap,
-        Position page_idx,
-        Position x,
-        Position page_y,
-        rs::u8 mask,
-        bool on
-    ) noexcept {
-        const rs::u8 *source = bitmap.buffer + page_idx * W;
-        const auto abs_x = static_cast<Position>(offset_x + x);
+        Pixel page_idx,
+        Pixel x,
+        Pixel page_y,
+        u8 mask,
+        bool on) noexcept {
+        const u8 *source = bitmap.buffer + page_idx * W;
+        const auto abs_x = static_cast<Pixel>(offset_x + x);
 
-        for (Position bx = 0; bx < W; ++bx) {
-            const auto target_x = static_cast<Position>(abs_x + bx);
+        for (Pixel bx = 0; bx < W; ++bx) {
+            const auto target_x = static_cast<Pixel>(abs_x + bx);
             if (target_x < offset_x or target_x >= offset_x + width) { continue; }
 
-            const rs::u8 data = source[bx] & mask;
+            const u8 data = source[bx] & mask;
             if (data == 0) { continue; }
 
             writeBitmapData(target_x, page_y, data, on);
         }
     }
 
-    /// Записывает данные битмапа с учетом смещения
-    void writeBitmapData(Position abs_x, Position page_y, rs::u8 data, bool on) const noexcept {
-        const auto page = static_cast<Position>(page_y >> 3);
-        const auto offset = static_cast<rs::u8>(page_y & 0x07);
+    /// @brief Записывает данные битмапа с учетом смещения
+    void writeBitmapData(Pixel abs_x, Pixel page_y, u8 data, bool on) const noexcept {
+        const auto page = static_cast<Pixel>(page_y >> 3);
+        const auto offset = static_cast<u8>(page_y & 0x07);
 
         if (offset == 0) {
             writeData(abs_x, page, data, on);
@@ -321,22 +310,22 @@ public:
             writeData(abs_x, page, data << offset, on);
 
             // Нижняя часть (следующая страница)
-            const auto next_page = static_cast<Position>(page + 1);
+            const auto next_page = static_cast<Pixel>(page + 1);
             writeData(abs_x, next_page, data >> (8 - offset), on);
         }
     }
 
-    /// Записывает пиксель
-    inline void writePixel(Position x, Position y, bool on) const noexcept {
-        const Position abs_x = toAbsoluteX(x);
-        const Position page = getPage(y);
-        const rs::u8 mask = getBitMask(y);
+    /// @brief Записывает пиксель
+    inline void writePixel(Pixel x, Pixel y, bool on) const noexcept {
+        const Pixel abs_x = toAbsoluteX(x);
+        const Pixel page = getPage(y);
+        const u8 mask = getBitMask(y);
         writeData(abs_x, page, mask, on);
     }
 
-    /// Записывает данные в буфер
-    inline void writeData(Position abs_x, Position page, rs::u8 data, bool on) const noexcept {
-        const rs::size index = page * stride + abs_x;
+    /// @brief Записывает данные в буфер
+    inline void writeData(Pixel abs_x, Pixel page, u8 data, bool on) const noexcept {
+        const usize index = page * stride + abs_x;
         if (on) {
             buffer[index] |= data;
         } else {
@@ -344,11 +333,11 @@ public:
         }
     }
 
-    /// Создает битовую маску для диапазона битов
-    static inline rs::u8 createPageMask(rs::u8 start_bit, rs::u8 end_bit) noexcept {
+    /// @brief Создает битовую маску для диапазона битов
+    static inline u8 createPageMask(u8 start_bit, u8 end_bit) noexcept {
         if (start_bit > end_bit) { return 0; }
-        const rs::u8 mask = ((1 << (end_bit + 1)) - 1) ^ ((1 << start_bit) - 1);
+        const u8 mask = ((1 << (end_bit + 1)) - 1) ^ ((1 << start_bit) - 1);
         return mask;
     }
 };
-}
+}// namespace kf::gfx

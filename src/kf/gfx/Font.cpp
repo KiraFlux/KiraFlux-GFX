@@ -2,7 +2,7 @@
 
 
 // https://github.com/GyverLibs/GyverOLED/blob/main/src/charMap.h
-static constexpr rs::u8 gyver_5x7_en_data[] = {
+static constexpr kf::u8 gyver_5x7_en_data[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, //   0x20 32
     0x00, 0x00, 0x6f, 0x00, 0x00, // ! 0x21 33
     0x00, 0x07, 0x00, 0x07, 0x00, // " 0x22 34
@@ -100,7 +100,7 @@ static constexpr rs::u8 gyver_5x7_en_data[] = {
     0x04, 0x02, 0x04, 0x08, 0x04, // ~ 0x7e 126
 };
 
-constexpr kf::gfx::Font kf::gfx::fonts::gyver_5x7_en = kf::gfx::Font{
+constexpr kf::gfx::Font kf::gfx::fonts::gyver_5x7_en{
     gyver_5x7_en_data,
     5,
     7,

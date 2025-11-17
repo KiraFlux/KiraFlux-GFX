@@ -1,6 +1,6 @@
 {
   "name": "KiraFlux-GFX",
-  "version": "0.6.3",
+  "version": "0.7.0",
   "description": "Minimalistic embedded graphics library with hierarchical frame support, efficient primitives, and text rendering. Optimized for resource-constrained systems.",
   "keywords": [
     "gfx",
@@ -25,7 +25,7 @@
   "frameworks": "*",
   "platforms": "*",
   "dependencies": {
-    "Rustify": "https://github.com/KiraFlux/Rustify.git"
+    "KiraFlux-ToolBox": "https://github.com/KiraFlux/KiraFlux-ToolBox.git"
   },
   "export": {
     "include": "src/kf"
