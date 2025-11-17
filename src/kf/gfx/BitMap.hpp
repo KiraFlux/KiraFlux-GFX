@@ -7,17 +7,17 @@ namespace kf::gfx {
 /// @brief БитМап изображение
 template<Pixel W, Pixel H> struct BitMap final {
 
-    /// @brief Ширина в пикселях
-    static constexpr auto width = W;
+    /// @brief Ширина
+    Pixel width() const { return W; }
 
-    /// @brief Высота в пикселях
-    static constexpr auto height = H;
-
+    /// @brief Высота
+    Pixel height() const { return H; }
+    
     /// @brief Количество страниц
     static constexpr auto pages = (height + 7) / 8;
 
     /// @brief Буфер
-    const u8 buffer[width * pages];
+    const u8 buffer[W * pages];
 
     BitMap() = delete;
 };
