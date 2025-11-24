@@ -8,6 +8,7 @@
 #include <kf/gfx/Font.hpp>
 #include <kf/gfx/FrameView.hpp>
 
+
 namespace kf::gfx {
 
 /// @brief Инструменты для рисования графических примитивов
@@ -48,7 +49,7 @@ public:
     /// @brief Автоматический перенос строки
     bool auto_next_line{false};
 
-    explicit Canvas(const FrameView &frame, const Font &font = Font::blank()) noexcept :
+    explicit Canvas(const FrameView &frame, const Font &font = Font::blank()) noexcept:
         frame{frame}, current_font{&font} {}
 
     explicit Canvas() :
@@ -59,7 +60,8 @@ public:
         Pixel width,
         Pixel height,
         Pixel offset_x,
-        Pixel offset_y) {
+        Pixel offset_y
+    ) {
         const auto frame_result = frame.sub(width, height, offset_x, offset_y);
 
         if (frame_result.isOk()) {
@@ -86,7 +88,8 @@ public:
 
         /// @brief Смещение по Y относительно родителя.
         /// @details 0 .. (parent.height() - sub_height)
-        Pixel offset_y) {
+        Pixel offset_y
+    ) {
         return Canvas{frame.subUnchecked(width, height, offset_x, offset_y), *current_font};
     }
 
@@ -121,6 +124,12 @@ public:
 
     /// @brief Ширина табуляции (Размер X)
     [[nodiscard]] inline Pixel tabWidth() const noexcept { return static_cast<Pixel>(current_font->widthTotal() * 4); }
+
+    /// @brief Ширина в глифах
+    [[nodiscard]] inline u8 widthInGlyph() const noexcept { return width() / current_font->glyph_width; }
+
+    /// @brief Высота в глифах
+    [[nodiscard]] inline u8 heightInGlyph() const noexcept { return height() / current_font->glyph_height; }
 
     // Управление
 
