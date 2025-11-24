@@ -4,9 +4,9 @@
 #include <cmath>
 #include <kf/Result.hpp>
 
-#include <kf/gfx/BitMap.hpp>
-#include <kf/gfx/Font.hpp>
-#include <kf/gfx/FrameView.hpp>
+#include "kf/gfx/BitMap.hpp"
+#include "kf/gfx/Font.hpp"
+#include "kf/gfx/FrameView.hpp"
 
 
 namespace kf::gfx {
@@ -35,8 +35,8 @@ struct Canvas {
 
 private:
     /// @brief Активный шрифт
-    /// @brief Всегда указывает на экземпляр шрифта
-    /// @brief Гарантированно не nullptr
+    /// @details Всегда указывает на экземпляр шрифта
+    /// @details Гарантированно не nullptr
     const Font *current_font;
 
     /// @brief Позиция курсора X

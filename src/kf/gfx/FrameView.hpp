@@ -1,10 +1,11 @@
 #pragma once
 
 #include <algorithm>
+
 #include <kf/Result.hpp>
 #include <kf/units.hpp>
 
-#include <kf/gfx/BitMap.hpp>
+#include "kf/gfx/BitMap.hpp"
 
 namespace kf::gfx {
 

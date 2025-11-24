@@ -4,372 +4,391 @@
 
 ---
 
-#### **FrameView**
+## Содержание
+- [FrameView](#frameview)
+- [BitMap](#bitmap)
+- [Font](#font)
+- [Canvas](#canvas)
+- [Примеры использования](#примеры-использования)
+- [Особенности работы](#особенности-работы)
+
+---
+
+## FrameView
 
 Представление прямоугольной области дисплея.
 
-**Создание:**
+### Создание
 
 ```cpp
-static rs::Result<FrameView, Error> create(  
-    rs::u8* buffer,  
-    Position stride,  
-    Position screen_width,  
-    Position screen_height,  
-    Position offset_x,  
-    Position offset_y  
-) noexcept;  
-```  
+static kf::Result<FrameView, Error> create(
+    kf::u8 * buffer,
+    kf::Pixel stride,
+    kf::Pixel width,
+    kf::Pixel height,
+    kf::Pixel offset_x,
+    kf::Pixel offset_y
+) noexcept;
+```
 
 Создает область с проверкой ошибок. Возвращает `Result` с ошибкой при некорректных параметрах.
 
 ```cpp
-FrameView(  
-    rs::u8* buffer,  
-    Position stride,  
-    Position screen_width,  
-    Position screen_height,  
-    Position offset_x,  
-    Position offset_y  
-) noexcept;  
-```  
+FrameView(
+    kf::u8 * buffer,
+    kf::Pixel stride,
+    kf::Pixel width,
+    kf::Pixel height,
+    kf::Pixel offset_x,
+    kf::Pixel offset_y
+) noexcept;
+```
 
 Создание без проверок (только когда параметры гарантированно корректны).
 
----
-
-**Методы FrameView:**
+### Методы
 
 ```cpp
-rs::Result<FrameView, Error> sub(  
-    Position sub_width,  
-    Position sub_height,  
-    Position sub_offset_x,  
-    Position sub_offset_y  
-) const noexcept;  
-```  
+kf::Result<FrameView, Error> sub(
+    kf::Pixel sub_width,
+    kf::Pixel sub_height,
+    kf::Pixel sub_offset_x,
+    kf::Pixel sub_offset_y
+) const noexcept;
+```
 
 Создает дочернюю область с проверкой границ. Возможные ошибки:
-
+- `BufferNotInit`: буфер не инициализирован
 - `SizeTooSmall`: размер < 1px
 - `SizeTooLarge`: дочерняя область > родительской
 - `OffsetOutOfBounds`: смещение вне границ
 
 ```cpp
-FrameView subUnchecked(  
-    Position sub_width,  
-    Position sub_height,  
-    Position sub_offset_x,  
-    Position sub_offset_y  
-) noexcept;  
-```  
+FrameView subUnchecked(
+    kf::Pixel sub_width,
+    kf::Pixel sub_height,
+    kf::Pixel sub_offset_x,
+    kf::Pixel sub_offset_y
+) noexcept;
+```
 
-Создает дочернюю область без проверок (для критичных к производительности участков).
-
-```cpp
-void fill(bool value) noexcept;  
-```  
-
-Заливает всю область указанным значением (true - белый, false - черный).
+Создает дочернюю область без проверок.
 
 ```cpp
-void setPixel(Position x, Position y, bool on) noexcept;  
-```  
+void fill(bool value) noexcept;
+```
+
+Заливает всю область указанным значением (true - включено, false - выключено).
+
+```cpp
+void setPixel(kf::Pixel x, kf::Pixel y, bool on) noexcept;
+```
 
 Устанавливает состояние пикселя в координатах (x, y) относительно области.
 
 ```cpp
-bool getPixel(Position x, Position y) const noexcept;  
-```  
+bool getPixel(kf::Pixel x, kf::Pixel y) const noexcept;
+```
 
 Возвращает состояние пикселя в координатах (x, y).
 
 ```cpp
-template<Position W, Position H>  
-void drawBitmap(  
-    Position x,  
-    Position y,  
-    const BitMap<W, H>& bm,  
-    bool on = true  
-) noexcept;  
-```  
+template<kf::Pixel W, kf::Pixel H>
+void drawBitmap(
+    kf::Pixel x,
+    kf::Pixel y,
+    const BitMap<W, H> & bitmap,
+    bool on = true
+) noexcept;
+```
 
-Рисует битмап с верхним левым углом в (x, y). Параметр `on` определяет режим рисования (true - обычный, false - инверсный).
+Рисует битмап с верхним левым углом в (x, y).
 
 ---
 
-#### **BitMap**
+## BitMap
+
+Статический битмап с предрасчитанными размерами.
 
 ```cpp
-template<Position W, Position H>  
-struct BitMap {  
-    static constexpr Position screen_width = W;  
-    static constexpr Position screen_height = H;  
-    const rs::u8 buffer[W * ((H + 7) / 8)];  
-};  
-```  
+template<kf::Pixel W, kf::Pixel H>
+struct BitMap final {
+    kf::Pixel width() const;          // Ширина битмапа
+    kf::Pixel height() const;         // Высота битмапа
+    static constexpr auto pages;      // Количество страниц
+    const kf::u8 buffer[W * pages];   // Буфер данных
+};
+```
 
-Статический битмап с предрасчитанными размерами. Хранит данные в упакованном виде (8 пикселей на байт).
+Хранит данные в упакованном виде (8 пикселей на байт).
 
 **Пример:**
-
 ```cpp
-// Шахматный паттерн 16x16  
-const kf::BitMap<16, 16> checker = {
-0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55,
-0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA
-};  
-```  
+// Шахматный паттерн 16x16
+const kf::gfx::BitMap<16, 16> checker = {
+    0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55,
+    0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA
+};
+```
 
 ---
 
-#### **Font**
+## Font
+
+Моноширинный шрифт с высотой глифов до 8 пикселей.
 
 ```cpp
-struct Font {  
-    const rs::u8* data;  
-    const rs::u8 glyph_width;  
-    const rs::u8 glyph_height;  
+struct Font final {
+    const kf::u8 * data;          // Данные шрифта
+    const kf::u8 glyph_width;     // Ширина глифа
+    const kf::u8 glyph_height;    // Высота глифа (1-8)
 
-    static const Font& blank() noexcept;  
-};  
-```  
+    static const Font & blank();  // Пустой шрифт
+    
+    kf::u8 widthTotal() const;    // Полная ширина глифа
+    kf::u8 heightTotal() const;   // Полная высота глифа
+    const kf::u8 * getGlyph(char c) const; // Получить глиф символа
+};
+```
 
-Моноширинный шрифт. Глифы хранятся в виде массивов битов.
-
-**Доступные шрифты:**
-
-```cpp
-namespace kf::fonts {  
-    extern const Font gyver_5x7_en; // Английский 5x7  
-}  
-```  
-
-**Метод:**
+### Доступные шрифты
 
 ```cpp
-const rs::u8* getGlyph(char c) const noexcept;  
-```  
-
-Возвращает указатель на данные глифа для символа или `nullptr` если символ отсутствует.
+namespace kf::gfx::fonts {
+    extern const Font gyver_5x7_en; // Английский шрифт 5x7
+}
+```
 
 ---
 
-#### **Canvas**
+## Canvas
 
 Инструмент для рисования с поддержкой текста и примитивов.
 
-**Инициализация:**
+### Инициализация
 
 ```cpp
-explicit Canvas(  
-    const FrameView& frame,  
-    const Font& font = Font::blank()  
-) noexcept;  
-```  
+explicit Canvas(
+    const FrameView & frame,
+    const Font & font = Font::blank()
+) noexcept;
+```
 
-Создает Canvas, привязанный к области и шрифту.
+### Свойства области
+
+```cpp
+kf::Pixel width() const;      // Ширина фрейма
+kf::Pixel height() const;     // Высота фрейма
+kf::Pixel maxX() const;       // Максимальная координата X
+kf::Pixel maxY() const;       // Максимальная координата Y
+kf::Pixel centerX() const;    // Центр по X
+kf::Pixel centerY() const;    // Центр по Y
+kf::Pixel maxGlyphX() const;  // Макс. X для глифа
+kf::Pixel maxGlyphY() const;  // Макс. Y для глифа
+kf::Pixel tabWidth() const;   // Ширина табуляции
+kf::u8 widthInGlyph() const;  // Ширина в глифах
+kf::u8 heightInGlyph() const; // Высота в глифах
+```
+
+### Управление областями
+
+```cpp
+kf::Result<Canvas, FrameView::Error> sub(
+    kf::Pixel width,
+    kf::Pixel height,
+    kf::Pixel offset_x,
+    kf::Pixel offset_y
+);
+
+Canvas subUnchecked(
+    kf::Pixel width,
+    kf::Pixel height,
+    kf::Pixel offset_x,
+    kf::Pixel offset_y
+) noexcept;
+
+template<kf::usize N>
+std::array<Canvas, N> splitHorizontally(std::array<kf::u8, N> weights);
+
+template<kf::usize N>
+std::array<Canvas, N> splitVertically(std::array<kf::u8, N> weights);
+```
+
+### Графические примитивы
+
+```cpp
+void fill(bool value) const noexcept;
+void dot(kf::Pixel x, kf::Pixel y, bool on = true) const noexcept;
+void line(kf::Pixel x0, kf::Pixel y0, kf::Pixel x1, kf::Pixel y1, bool on = true) const noexcept;
+
+void rect(kf::Pixel x0, kf::Pixel y0, kf::Pixel x1, kf::Pixel y1, Mode mode) noexcept;
+void circle(kf::Pixel cx, kf::Pixel cy, kf::Pixel r, Mode mode) noexcept;
+
+template<kf::Pixel W, kf::Pixel H>
+void bitmap(kf::Pixel x, kf::Pixel y, const BitMap<W, H> & bm, bool on = true) noexcept;
+```
+
+**Режимы отрисовки:**
+```cpp
+enum class Mode : kf::u8 {
+    Fill,           // Заливка всей области
+    Clear,          // Очистка всей области  
+    FillBorder,     // Только граница (включено)
+    ClearBorder     // Только граница (выключено)
+};
+```
+
+### Работа с текстом
+
+```cpp
+void setCursor(kf::Pixel x, kf::Pixel y) noexcept;
+void setFont(const Font & font) noexcept;
+void text(const char * text, bool on = true) noexcept;
+```
+
+**Управляющие последовательности:**
+- `\n` - перенос строки
+- `\t` - табуляция (4 символа)
+- `\x80` - нормальный цвет текста
+- `\x81` - инверсный цвет текста
+- `\x82` - установка курсора по центру X
 
 ---
 
-**Методы Canvas:**
+## Примеры использования
+
+### 1. Простой интерфейс с разделением
 
 ```cpp
-rs::Result<Canvas, FrameView::Error> sub(  
-    Position screen_width,  
-    Position screen_height,  
-    Position offset_x,  
-    Position offset_y  
-);  
-```  
-
-Создает дочерний Canvas с проверкой ошибок.
-
-```cpp
-Canvas subUnchecked(  
-    Position screen_width,  
-    Position screen_height,  
-    Position offset_x,  
-    Position offset_y  
-) noexcept;  
-```  
-
-Создает дочерний Canvas без проверок.
-
-```cpp
-template<rs::size N>  
-std::array<Canvas, N> splitHorizontally(  
-    std::array<rs::u8, N> weights  
-);  
-```  
-
-Делит область горизонтально на N частей согласно весам. Пример:
-
-```cpp
-// 25% | 75%  
-auto[left, right] = canvas.splitHorizontally<2>({ 1, 3 });  
-```  
-
-```cpp
-template<rs::size N>  
-std::array<Canvas, N> splitVertically(  
-    std::array<rs::u8, N> weights  
-);  
-```  
-
-Делит область вертикально.
-
-```cpp
-void setCursor(Position x, Position y) noexcept;  
-```  
-
-Устанавливает позицию для текстового вывода (левый верхний угол следующего символа).
-
-```cpp
-void setFont(const Font& font) noexcept;  
-```  
-
-Смена активного шрифта.
-
-```cpp
-void text(rs::str text) noexcept;  
-```  
-
-Выводит текст с поддержкой управляющих последовательностей:
-
-- `\n`: Перенос строки
-- `\t`: Табуляция (4 символа)
-- `\x80`: Нормальный цвет текста
-- `\x81`: Инверсный цвет текста
-- `\x82`: Устанавливает X-координату курсора в центр области
-
----
-
-**Графические примитивы:**
-
-```cpp
-void dot(Position x, Position y, bool on = true) noexcept;  
-```  
-
-Рисует точку в координатах (x, y).
-
-```cpp
-void line(Position x0, Position y0, Position x1, Position y1, bool on = true) noexcept;  
-```  
-
-Рисует линию между точками (x0,y0) и (x1,y1) алгоритмом Брезенхема.
-
-```cpp
-void rect(Position x0, Position y0, Position x1, Position y1, Mode mode) noexcept;  
-```  
-
-Рисует прямоугольник с режимом:
-
-```cpp
-enum class Mode : rs::u8 {  
-    Fill,        // Заливка всей области  
-    Clear,       // Очистка всей области  
-    FillBorder,  // Только граница (пиксели включены)  
-    ClearBorder  // Только граница (пиксели выключены)  
-};  
-```  
-
-```cpp
-void circle(Position cx, Position cy, Position r, Mode mode) noexcept;  
-```  
-
-Рисует окружность с центром (cx, cy) и радиусом r. Поддерживает те же режимы, что и `rect()`.
-
----
-
-### Примеры использования
-
-**1. Центрирование текста:**
-
-```cpp
-// Установка начала текста в центр  
-canvas.setCursor(canvas.centerX(), 10);
-canvas.text("\x82Hello World");
-
-// Ручное центрирование  
-auto text = "Centered";
-Position text_width = strlen(text) * canvas.current_font->glyph_width;
-Position start_x = canvas.centerX() - text_width/2;
-canvas.setCursor(start_x, 10);
-canvas.text(text);
-```  
-
-**2. Динамический интерфейс:**
-
-```cpp
-void create_ui(kf::Canvas& canvas) {
-    // Разделение на заголовок и контент
-    auto [header, content] = canvas.splitVertically<2>({1, 5});
+void create_dashboard(kf::gfx::Canvas & canvas) {
+    // Вертикальное разделение: заголовок 20%, контент 80%
+    auto [header, content] = canvas.splitVertically<2>({1, 4});
     
     // Заголовок
-    header.fill(true);
+    header.fill(true); // Белый фон
     header.setCursor(header.centerX(), 2);
-    header.text("\x82\x80Dashboard"); // Центрированный белый текст
+    header.text("\x82Status", false); // Центрированный черный текст
     
-    // Контент-область
-    content.rect(0, 0, content.screen_width()-1, content.screen_height()-1, 
-                 Canvas::Mode::FillBorder);
+    // Контент с рамкой
+    content.rect(0, 0, content.maxX(), content.maxY(), 
+                 kf::gfx::Canvas::Mode::FillBorder);
+    
+    // Разделение контента на две колонки
+    auto [left_panel, right_panel] = content.splitHorizontally<2>({1, 1});
+    
+    left_panel.setCursor(2, 2);
+    left_panel.text("Temp: 25C");
+    
+    right_panel.setCursor(2, 2); 
+    right_panel.text("Hum: 60%");
 }
 ```
 
-**3. Анимация с примитивами:**
+### 2. Анимация с графическими примитивами
 
 ```cpp
-void animate(kf::Canvas& canvas) {
-    static Position y = 0;
+void animate_meter(kf::gfx::Canvas & canvas) {
+    static kf::Pixel angle = 0;
+    
+    // Очистка и рамка
+    canvas.fill(false);
+    canvas.rect(0, 0, canvas.maxX(), canvas.maxY(), 
+                kf::gfx::Canvas::Mode::FillBorder);
+    
+    // Центр и радиус
+    kf::Pixel center_x = canvas.centerX();
+    kf::Pixel center_y = canvas.centerY();
+    kf::Pixel radius = canvas.height() / 3;
+    
+    // Окружность
+    canvas.circle(center_x, center_y, radius, 
+                  kf::gfx::Canvas::Mode::FillBorder);
+    
+    // Стрелка (линия из центра)
+    kf::Pixel end_x = center_x + (radius * cos(angle)) / 256;
+    kf::Pixel end_y = center_y + (radius * sin(angle)) / 256;
+    canvas.line(center_x, center_y, end_x, end_y);
+    
+    angle += 10; // Следующий кадр
+}
+```
+
+### 3. Работа с битмапами и текстом
+
+```cpp
+// Битмап иконки 8x8
+const kf::gfx::BitMap<8, 8> icon = {
+    0x3C, 0x42, 0x81, 0x81, 0x81, 0x81, 0x42, 0x3C
+};
+
+void draw_notification(kf::gfx::Canvas & canvas, const char * message) {
     canvas.fill(false); // Очистка
     
-    // Двигающаяся линия
-    canvas.line(0, y, canvas.screen_width()-1, y);
+    // Иконка слева
+    canvas.bitmap(2, 2, icon);
     
-    // Прыгающий круг
-    static Position radius = 5;
-    Position cx = canvas.screen_width() / 2;
-    Position cy = y + radius + 2;
-    canvas.circle(cx, cy, radius, Canvas::Mode::FillBorder);
+    // Текст справа от иконки
+    canvas.setCursor(12, 2);
+    canvas.text(message);
     
-    y = (y + 1) % canvas.screen_height();
-    radius = 3 + (y % 10);
+    // Разделительная линия
+    canvas.line(0, canvas.maxY(), canvas.maxX(), canvas.maxY());
+}
+```
+
+### 4. Сложное разделение интерфейса
+
+```cpp
+void create_complex_ui(kf::gfx::Canvas & canvas) {
+    // Главное разделение: сайдбар + основной контент
+    auto [sidebar, main] = canvas.splitHorizontally<2>({1, 3});
+    
+    // Сайдбар: заголовок + меню
+    auto [sidebar_header, menu] = sidebar.splitVertically<2>({1, 4});
+    
+    sidebar_header.fill(true);
+    sidebar_header.setCursor(sidebar_header.centerX(), 2);
+    sidebar_header.text("\x82Menu", false);
+    
+    // Основной контент: заголовок + данные + статус
+    auto [main_header, content, status] = main.splitVertically<3>({1, 3, 1});
+    
+    main_header.rect(0, 0, main_header.maxX(), main_header.maxY(),
+                     kf::gfx::Canvas::Mode::FillBorder);
+    main_header.setCursor(main_header.centerX(), 2);
+    main_header.text("\x82Data View");
+    
+    status.fill(true);
+    status.setCursor(2, 2);
+    status.text("Ready", false);
 }
 ```
 
 ---
 
-### Особенности работы
+## Особенности работы
 
-1. **Система координат**:
-    - Начало (0, 0) в левом верхнем углу
-    - X увеличивается вправо, Y - вниз
+### Система координат
+- Начало (0, 0) в левом верхнем углу
+- X увеличивается вправо, Y - вниз
+- Все координаты относительные внутри области
 
-2. **Производительность**:
-    - Примитивы оптимизированы для embedded-систем
-    - Все методы `noexcept`
-    - Минимальные проверки в `Unchecked` методах
+### Производительность
+- Все методы `noexcept`
+- Алгоритм Брезенхема для линий
+- Оптимизированные методы заливки
+- Минимальные проверки в `Unchecked` методах
 
-3. **Текстовый вывод**:
-    - Автоматический перенос при включенном `auto_next_line`
-    - Цвет текста `text_value_on`
-    - Межсимвольный интервал: 1 пиксель
-    - Поддержка только ASCII (32-127)
+### Текстовый вывод
+- Моноширинные шрифты до 8px высотой
+- Межсимвольный интервал: 1 пиксель
+- Поддержка ASCII (32-127)
+- Автоперенос при `auto_next_line = true`
 
-4. **Ограничения**:
-    - Максимальная высота шрифта: 8 пикселей
-    - Нет поддержки поворота текста
+### Рекомендации
+- Используйте `BitMap` для статических элементов
+- Проверяйте ошибки через `Result<>` при создании под-областей
+- Для максимальной производительности используйте `Unchecked` методы
+- Отключайте `auto_next_line` для ручного управления текстом
 
-**Рекомендации**:
-
-- Для статических элементов используйте `BitMap` вместо примитивов
-- При работе с под-областями проверяйте ошибки через `Result<>`
-- Для динамического контента отключайте `auto_next_line`
-
-```cpp
-// Отключение авто-переноса
-canvas.auto_next_line = false;
-```  
-
-Лицензия: MIT ([LICENSE](./LICENSE))
+**Лицензия: MIT** ([LICENSE](./LICENSE))

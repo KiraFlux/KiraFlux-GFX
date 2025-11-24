@@ -49,10 +49,10 @@ struct Font final {
     }
 };
 
-/// Системные шрифты
+/// @brief Системные шрифты
 namespace fonts {
 
-/// GyverOLED EN Font
+/// @brief GyverOLED EN Font
 extern const Font gyver_5x7_en;
 
 }// namespace fonts
